@@ -39,7 +39,7 @@ class Rescuer(AbstAgent):
         """ The explorer sends the map containing the walls and
         victims' location. The rescuer becomes ACTIVE. From now,
         the deliberate method is called by the environment"""
-
+        
         print(f"\n\n*** R E S C U E R ***")
         self.map = map
         print(f"{self.NAME} Map received from the explorer")
@@ -160,4 +160,3 @@ class Rescuer(AbstAgent):
         input(f"{self.NAME} remaining time: {self.get_rtime()} Tecle enter")
 
         return True
-

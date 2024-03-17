@@ -13,6 +13,19 @@ from vs.abstract_agent import AbstAgent
 from vs.constants import VS
 from map import Map
 
+exp1_finished = False
+exp2_finished = False
+exp3_finished = False
+exp4_finished = False
+exp1_map = Map()
+exp2_map = Map()
+exp3_map = Map()
+exp4_map = Map()
+exp1_victims = {}
+exp2_victims = {}
+exp3_victims = {}
+exp4_victims = {}
+
 class Stack:
     def __init__(self):
         self.items = []
@@ -34,7 +47,6 @@ class Explorer(AbstAgent):
         @param config_file: the absolute path to the explorer's config file
         @param resc: a reference to the rescuer agent to invoke when exploration finishes
         """
-
         super().__init__(env, config_file)
         self.walk_stack = Stack()  # a stack to store the movements
         self.set_state(VS.ACTIVE)  # explorer is active since the begin
@@ -146,21 +158,101 @@ class Explorer(AbstAgent):
     def deliberate(self) -> bool:
         """ The agent chooses the next action. The simulator calls this
         method at each cycle. Must be implemented in every agent"""
+        global exp1_finished
+        global exp2_finished
+        global exp3_finished
+        global exp4_finished
+        global exp1_map
+        global exp2_map
+        global exp3_map
+        global exp4_map
+        global exp1_victims
+        global exp2_victims
+        global exp3_victims
+        global exp4_victims
 
-        if self.get_rtime() > self.time_to_comeback:
-            self.explore()
-            return True
-        else:
-            # time to come back to the base
-            if self.walk_stack.is_empty():
-                # time to wake up the rescuer
-                # pass the walls and the victims (here, they're empty)
-                print(f"{self.NAME}: rtime {self.get_rtime()}, invoking the rescuer")
-                input(f"{self.NAME}: type [ENTER] to proceed")
-                self.map.draw()
-                #self.resc.go_save_victims(self.map, self.victims)
-                return False
-            else:
-                self.come_back()
+        if self.NAME == "EXPLORER1BLUE":
+            if self.get_rtime() > self.time_to_comeback:
+                self.explore()
                 return True
-
+            else:
+                # time to come back to the base
+                if self.walk_stack.is_empty():
+                    # time to wake up the rescuer
+                    # pass the walls and the victims (here, they're empty)
+                    exp1_finished = True
+                    exp1_map = self.map
+                    exp1_victims = self.victims
+                    print(f"{self.NAME}: rtime {self.get_rtime()}, invoking the rescuer")
+                    input(f"{self.NAME}: type [ENTER] to proceed")
+                    if exp1_finished & exp2_finished & exp3_finished & exp4_finished:
+                        self.resc.go_save_victims(exp1_map, exp1_victims)
+                    return False
+                else:
+                    self.come_back()
+                    return True
+        elif self.NAME == "EXPLORER2GREEN":
+            if self.get_rtime() > self.time_to_comeback:
+                self.explore()
+                return True
+            else:
+                # time to come back to the base
+                if self.walk_stack.is_empty():
+                    # time to wake up the rescuer
+                    # pass the walls and the victims (here, they're empty)
+                    exp2_finished = True
+                    exp2_map = self.map
+                    exp2_victims = self.victims
+                    print(f"{self.NAME}: rtime {self.get_rtime()}, invoking the rescuer")
+                    input(f"{self.NAME}: type [ENTER] to proceed")
+                    if exp1_finished & exp2_finished & exp3_finished & exp4_finished:
+                        self.resc.go_save_victims(exp1_map, exp1_victims)
+                    return False
+                else:
+                    self.come_back()
+                    return True    
+                
+        elif self.NAME == "EXPLORER3PURPLE":
+            if self.get_rtime() > self.time_to_comeback:
+                self.explore()
+                return True
+            else:
+                # time to come back to the base
+                if self.walk_stack.is_empty():
+                    # time to wake up the rescuer
+                    # pass the walls and the victims (here, they're empty)
+                    exp3_finished = True
+                    exp3_map = self.map
+                    exp3_victims = self.victims
+                    print(f"{self.NAME}: rtime {self.get_rtime()}, invoking the rescuer")
+                    input(f"{self.NAME}: type [ENTER] to proceed")
+                    if exp1_finished & exp2_finished & exp3_finished & exp4_finished:
+                        self.resc.go_save_victims(exp1_map, exp1_victims)
+                    return False
+                else:
+                    self.come_back()
+                    return True
+                
+        else:
+            if self.get_rtime() > self.time_to_comeback:
+                self.explore()
+                return True
+            else:
+                # time to come back to the base
+                if self.walk_stack.is_empty():
+                    # time to wake up the rescuer
+                    # pass the walls and the victims (here, they're empty)
+                    exp4_finished = True
+                    exp4_map = self.map
+                    exp4_victims = self.victims
+                    print(f"{self.NAME}: rtime {self.get_rtime()}, invoking the rescuer")
+                    input(f"{self.NAME}: type [ENTER] to proceed")
+                    if exp1_finished & exp2_finished & exp3_finished & exp4_finished:
+                        self.resc.go_save_victims(exp1_map, exp1_victims)                   
+                    return False
+                else:
+                    self.come_back()
+                    return True        
+        
+       
+        
