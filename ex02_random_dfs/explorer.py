@@ -50,19 +50,36 @@ class Explorer(AbstAgent):
         self.map.add((self.x, self.y), 1, VS.NO_VICTIM, self.check_walls_and_lim())
 
     def get_next_position(self):
-        """ Randomically, gets the next position that can be explored (no wall and inside the grid)
-            There must be at least one CLEAR position in the neighborhood, otherwise it loops forever.
-        """
         # Check the neighborhood walls and grid limits
         obstacles = self.check_walls_and_lim()
-    
-        # Loop until a CLEAR position is found
-        while True:
-            # Get a random direction
-            direction = random.randint(0, 7)
+        if self.NAME == "EXPLORER1BLUE":
+            # Loop until a CLEAR position is found
+            while True:
+                direction = random.randint(0,7)           
             # Check if the corresponding position in walls_and_lim is CLEAR
-            if obstacles[direction] == VS.CLEAR:
-                return Explorer.AC_INCR[direction]
+                if obstacles[direction] == VS.CLEAR:
+                 return Explorer.AC_INCR[direction]
+        elif self.NAME == "EXPLORER2GREEN":
+            # Loop until a CLEAR position is found
+            while True:  
+                direction = random.randint(0,7)         
+            # Check if the corresponding position in walls_and_lim is CLEAR
+                if obstacles[direction] == VS.CLEAR:
+                 return Explorer.AC_INCR[direction]
+        elif self.NAME == "EXPLORER3PURPLE":
+            # Loop until a CLEAR position is foun 
+            while True:
+                direction = random.randint(0,7)      
+            # Check if the corresponding position in walls_and_lim is CLEAR
+                if obstacles[direction] == VS.CLEAR:
+                 return Explorer.AC_INCR[direction]
+        else:
+            # Loop until a CLEAR position is found
+            while True:   
+                direction = random.randint(0,7)       
+            # Check if the corresponding position in walls_and_lim is CLEAR
+                if obstacles[direction] == VS.CLEAR:
+                 return Explorer.AC_INCR[direction]
         
     def explore(self):
         # get an random increment for x and y       
@@ -140,7 +157,8 @@ class Explorer(AbstAgent):
                 # pass the walls and the victims (here, they're empty)
                 print(f"{self.NAME}: rtime {self.get_rtime()}, invoking the rescuer")
                 input(f"{self.NAME}: type [ENTER] to proceed")
-                self.resc.go_save_victims(self.map, self.victims)
+                self.map.draw()
+                #self.resc.go_save_victims(self.map, self.victims)
                 return False
             else:
                 self.come_back()
