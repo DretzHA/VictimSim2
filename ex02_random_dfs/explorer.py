@@ -186,7 +186,7 @@ class Explorer(AbstAgent):
                     print(f"{self.NAME}: rtime {self.get_rtime()}, invoking the rescuer")
                     input(f"{self.NAME}: type [ENTER] to proceed")
                     if exp1_finished & exp2_finished & exp3_finished & exp4_finished:
-                        self.resc.go_save_victims(exp1_map, exp1_victims)
+                        self.unifica(exp1_map,exp2_map,exp3_map,exp4_map,exp1_victims,exp2_victims,exp3_victims,exp4_victims)  
                     return False
                 else:
                     self.come_back()
@@ -206,7 +206,7 @@ class Explorer(AbstAgent):
                     print(f"{self.NAME}: rtime {self.get_rtime()}, invoking the rescuer")
                     input(f"{self.NAME}: type [ENTER] to proceed")
                     if exp1_finished & exp2_finished & exp3_finished & exp4_finished:
-                        self.resc.go_save_victims(exp1_map, exp1_victims)
+                        self.unifica(exp1_map,exp2_map,exp3_map,exp4_map,exp1_victims,exp2_victims,exp3_victims,exp4_victims)  
                     return False
                 else:
                     self.come_back()
@@ -227,7 +227,7 @@ class Explorer(AbstAgent):
                     print(f"{self.NAME}: rtime {self.get_rtime()}, invoking the rescuer")
                     input(f"{self.NAME}: type [ENTER] to proceed")
                     if exp1_finished & exp2_finished & exp3_finished & exp4_finished:
-                        self.resc.go_save_victims(exp1_map, exp1_victims)
+                        self.unifica(exp1_map,exp2_map,exp3_map,exp4_map,exp1_victims,exp2_victims,exp3_victims,exp4_victims)  
                     return False
                 else:
                     self.come_back()
@@ -248,11 +248,16 @@ class Explorer(AbstAgent):
                     print(f"{self.NAME}: rtime {self.get_rtime()}, invoking the rescuer")
                     input(f"{self.NAME}: type [ENTER] to proceed")
                     if exp1_finished & exp2_finished & exp3_finished & exp4_finished:
-                        self.resc.go_save_victims(exp1_map, exp1_victims)                   
+                        self.unifica(exp1_map,exp2_map,exp3_map,exp4_map,exp1_victims,exp2_victims,exp3_victims,exp4_victims)                  
                     return False
                 else:
                     self.come_back()
                     return True        
         
        
-        
+    def unifica(self,exp1_map,exp2_map,exp3_map,exp4_map,exp1_victims,exp2_victims,exp3_victims,exp4_victims):        
+        #combined victims
+        merged_victims = { **exp1_victims, **exp2_victims, **exp3_victims, **exp4_victims}
+        print(merged_victims.items())
+
+        self.resc.go_save_victims(exp1_map, merged_victims)  
