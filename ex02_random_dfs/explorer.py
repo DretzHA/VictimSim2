@@ -12,6 +12,7 @@ from abc import ABC, abstractmethod
 from vs.abstract_agent import AbstAgent
 from vs.constants import VS
 from map import Map
+from clustering import victims_clustering
 
 exp1_finished = False
 exp2_finished = False
@@ -64,6 +65,8 @@ class Explorer(AbstAgent):
     def get_next_position(self):
         # Check the neighborhood walls and grid limits
         obstacles = self.check_walls_and_lim()
+        
+        #cada explorador faz seu método de busca, por isso divide por nome
         if self.NAME == "EXPLORER1BLUE":
             # Loop until a CLEAR position is found
             while True:
@@ -158,6 +161,7 @@ class Explorer(AbstAgent):
     def deliberate(self) -> bool:
         """ The agent chooses the next action. The simulator calls this
         method at each cycle. Must be implemented in every agent"""
+        #uso de varivais globais para ver término, mapa e vitimas de cada agente
         global exp1_finished
         global exp2_finished
         global exp3_finished
@@ -185,6 +189,7 @@ class Explorer(AbstAgent):
                     exp1_victims = self.victims
                     print(f"{self.NAME}: rtime {self.get_rtime()}, invoking the rescuer")
                     input(f"{self.NAME}: type [ENTER] to proceed")
+                    #se todos exploradores finalizaram, chama função de unificar
                     if exp1_finished & exp2_finished & exp3_finished & exp4_finished:
                         self.unifica(exp1_map,exp2_map,exp3_map,exp4_map,exp1_victims,exp2_victims,exp3_victims,exp4_victims)  
                     return False
@@ -205,6 +210,7 @@ class Explorer(AbstAgent):
                     exp2_victims = self.victims
                     print(f"{self.NAME}: rtime {self.get_rtime()}, invoking the rescuer")
                     input(f"{self.NAME}: type [ENTER] to proceed")
+                    #se todos exploradores finalizaram, chama função de unificar
                     if exp1_finished & exp2_finished & exp3_finished & exp4_finished:
                         self.unifica(exp1_map,exp2_map,exp3_map,exp4_map,exp1_victims,exp2_victims,exp3_victims,exp4_victims)  
                     return False
@@ -226,6 +232,7 @@ class Explorer(AbstAgent):
                     exp3_victims = self.victims
                     print(f"{self.NAME}: rtime {self.get_rtime()}, invoking the rescuer")
                     input(f"{self.NAME}: type [ENTER] to proceed")
+                    #se todos exploradores finalizaram, chama função de unificar
                     if exp1_finished & exp2_finished & exp3_finished & exp4_finished:
                         self.unifica(exp1_map,exp2_map,exp3_map,exp4_map,exp1_victims,exp2_victims,exp3_victims,exp4_victims)  
                     return False
@@ -247,6 +254,7 @@ class Explorer(AbstAgent):
                     exp4_victims = self.victims
                     print(f"{self.NAME}: rtime {self.get_rtime()}, invoking the rescuer")
                     input(f"{self.NAME}: type [ENTER] to proceed")
+                    #se todos exploradores finalizaram, chama função de unificar
                     if exp1_finished & exp2_finished & exp3_finished & exp4_finished:
                         self.unifica(exp1_map,exp2_map,exp3_map,exp4_map,exp1_victims,exp2_victims,exp3_victims,exp4_victims)                  
                     return False
@@ -254,18 +262,16 @@ class Explorer(AbstAgent):
                     self.come_back()
                     return True        
         
-       
+    #unifica mapa e vitimas de todos os agentes   
     def unifica(self,exp1_map,exp2_map,exp3_map,exp4_map,exp1_victims,exp2_victims,exp3_victims,exp4_victims):        
         #combined victims
         merged_maps = Map()
         merged_victims = { **exp1_victims, **exp2_victims, **exp3_victims, **exp4_victims}
-        # print the found victims
-        for seq, data in merged_victims.items():
-            coord, vital_signals = data
-            x, y = coord
-            print(f"{self.NAME} Victim seq number: {seq} at ({x}, {y}) vs: {vital_signals}")
+
         #combined maps
         merged_maps.map_data = { **exp1_map.map_data, **exp2_map.map_data, **exp3_map.map_data, **exp4_map.map_data}
-        merged_maps.draw()
-    
+        
+        #função para clusterização e divisão de vitimas por agente resgatador
+        victims_clustering(merged_victims)
+
         self.resc.go_save_victims(merged_maps, merged_victims)  
