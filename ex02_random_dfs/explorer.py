@@ -257,7 +257,15 @@ class Explorer(AbstAgent):
        
     def unifica(self,exp1_map,exp2_map,exp3_map,exp4_map,exp1_victims,exp2_victims,exp3_victims,exp4_victims):        
         #combined victims
+        merged_maps = Map()
         merged_victims = { **exp1_victims, **exp2_victims, **exp3_victims, **exp4_victims}
-        print(merged_victims.items())
-
-        self.resc.go_save_victims(exp1_map, merged_victims)  
+        # print the found victims
+        for seq, data in merged_victims.items():
+            coord, vital_signals = data
+            x, y = coord
+            print(f"{self.NAME} Victim seq number: {seq} at ({x}, {y}) vs: {vital_signals}")
+        #combined maps
+        merged_maps.map_data = { **exp1_map.map_data, **exp2_map.map_data, **exp3_map.map_data, **exp4_map.map_data}
+        merged_maps.draw()
+    
+        self.resc.go_save_victims(merged_maps, merged_victims)  
