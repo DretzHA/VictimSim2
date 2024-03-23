@@ -8,6 +8,7 @@ import sys
 import os
 import random
 import math
+import pandas as pd
 from abc import ABC, abstractmethod
 from vs.abstract_agent import AbstAgent
 from vs.constants import VS
@@ -40,6 +41,7 @@ class Stack:
 
     def is_empty(self):
         return len(self.items) == 0
+    
 
 class Explorer(AbstAgent):
     def __init__(self, env, config_file, resc):
@@ -50,6 +52,9 @@ class Explorer(AbstAgent):
         """
         super().__init__(env, config_file)
         self.walk_stack = Stack()  # a stack to store the movements
+        self.dfs_stack = Stack()   # stack for map position
+        self.direction_stack = Stack() #stack to direction
+        self.action = 0            # action to do
         self.set_state(VS.ACTIVE)  # explorer is active since the begin
         self.resc = resc           # reference to the rescuer agent
         self.x = 0                 # current x position relative to the origin 0
@@ -58,7 +63,7 @@ class Explorer(AbstAgent):
         self.map = Map()           # create a map for representing the environment
         self.victims = {}          # a dictionary of found victims: (seq): ((x,y), [<vs>])
                                    # the key is the seq number of the victim,(x,y) the position, <vs> the list of vital signals
-
+    
         # put the current position - the base - in the map
         self.map.add((self.x, self.y), 1, VS.NO_VICTIM, self.check_walls_and_lim())
 
@@ -85,8 +90,12 @@ class Explorer(AbstAgent):
             # Loop until a CLEAR position is foun 
             while True:
                 direction = random.randint(0,7)      
+                self.action = direction
+                online_dfs_agent(self.dfs_stack, self.direction_stack, self.action)
             # Check if the corresponding position in walls_and_lim is CLEAR
                 if obstacles[direction] == VS.CLEAR:
+                 self.dfs_stack.push((self.x, self.y))
+                 self.direction_stack.push(direction)
                  return Explorer.AC_INCR[direction]
         else:
             # Loop until a CLEAR position is found
@@ -115,12 +124,11 @@ class Explorer(AbstAgent):
         if result == VS.EXECUTED:
             # check for victim returns -1 if there is no victim or the sequential
             # the sequential number of a found victim
+            
             self.walk_stack.push((dx, dy))
-
             # update the agent's position relative to the origin
             self.x += dx
             self.y += dy          
-
             # Check for victims
             seq = self.check_for_victim()
             if seq != VS.NO_VICTIM:
@@ -139,7 +147,7 @@ class Explorer(AbstAgent):
             # Update the map with the new cell
             self.map.add((self.x, self.y), difficulty, seq, self.check_walls_and_lim())
             #print(f"{self.NAME}:at ({self.x}, {self.y}), diffic: {difficulty:.2f} vict: {seq} rtime: {self.get_rtime()}")
-
+            
         return
 
     def come_back(self):
@@ -192,10 +200,12 @@ class Explorer(AbstAgent):
                 #se todos exploradores finalizaram, chama função de unificar
                 if exp1_finished & exp2_finished & exp3_finished & exp4_finished:
                     self.unifica(exp1_map,exp2_map,exp3_map,exp4_map,exp1_victims,exp2_victims,exp3_victims,exp4_victims)  
+                    
                     return False
             else:
                 self.come_back()
                 return True
+            
         elif self.NAME == "EXPLORER2GREEN":
             consumed_time = self.TLIM - self.get_rtime()
             if consumed_time < self.get_rtime():
@@ -217,6 +227,7 @@ class Explorer(AbstAgent):
             else:
                 self.come_back()
                 return True
+
         elif self.NAME == "EXPLORER3PURPLE":
             consumed_time = self.TLIM - self.get_rtime()
             if consumed_time < self.get_rtime():
@@ -238,7 +249,7 @@ class Explorer(AbstAgent):
             else:
                 self.come_back()
                 return True
-                
+
         else:
             consumed_time = self.TLIM - self.get_rtime()
             if consumed_time < self.get_rtime():
@@ -260,7 +271,7 @@ class Explorer(AbstAgent):
             else:
                 self.come_back()
                 return True    
-        
+
     #unifica mapa e vitimas de todos os agentes   
     def unifica(self,exp1_map,exp2_map,exp3_map,exp4_map,exp1_victims,exp2_victims,exp3_victims,exp4_victims):        
         #combined victims
@@ -270,7 +281,21 @@ class Explorer(AbstAgent):
         #combined maps
         merged_maps.map_data = { **exp1_map.map_data, **exp2_map.map_data, **exp3_map.map_data, **exp4_map.map_data}
         
+
         #função para clusterização e divisão de vitimas por agente resgatador
         victims_clustering(merged_victims)
+        self.resc.go_save_victims(merged_maps, merged_victims) 
+        
+def online_dfs_agent(dfs_stack, direction_stack, action):
+    df_result = pd.DataFrame(columns=['0', '1', '2', '3', '4', '5', '6', '7'])
+    df_untried = pd.DataFrame(columns=['0', '1', '2', '3', '4', '5', '6', '7'])
+    df_unbacktracked = pd.DataFrame(columns=['0', '1', '2', '3', '4', '5', '6', '7'])
+    previous_state =[]
+    print("WALK_STACK_ITEMS BLUE")
+    print(dfs_stack.items)
+    print(direction_stack.items)
+    print(action)
+    
 
-        self.resc.go_save_victims(merged_maps, merged_victims)  
+
+        
