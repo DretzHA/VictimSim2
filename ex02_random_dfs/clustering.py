@@ -24,17 +24,16 @@ def victims_clustering(merged_victims):
     kmeans = KMeans(n_clusters=num_clusters, random_state=0, n_init="auto").fit(cluster_array) #clusterização por k-means - 
                                                                                                #pode-se cria outro array com diferentes colunas(features) para uso no k-mean
 
-
     #logica para separar vitimas do cluster por agente de resgate
     for i in range(0,len(merged_victims)):
         if (kmeans.labels_[i])==0:
-            resc1_victims = {key:merged_victims[key] for key in [seq_array[i][0]]}
+            resc1_victims.update({key:merged_victims[key] for key in [seq_array[i][0]]})
         elif (kmeans.labels_[i])==1:
-            resc2_victims = {key:merged_victims[key] for key in [seq_array[i][0]]}
+            resc2_victims.update({key:merged_victims[key] for key in [seq_array[i][0]]})
         elif (kmeans.labels_[i])==2:
-            resc3_victims = {key:merged_victims[key] for key in [seq_array[i][0]]}
+            resc3_victims.update({key:merged_victims[key] for key in [seq_array[i][0]]})
         else:
-            resc4_victims = {key:merged_victims[key] for key in [seq_array[i][0]]}
+            resc4_victims.update({key:merged_victims[key] for key in [seq_array[i][0]]})
             
     
     for seq, data in resc1_victims.items():

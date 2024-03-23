@@ -52,9 +52,6 @@ class Explorer(AbstAgent):
         """
         super().__init__(env, config_file)
         self.walk_stack = Stack()  # a stack to store the movements
-        self.dfs_stack = Stack()   # stack for map position
-        self.direction_stack = Stack() #stack to direction
-        self.action = 0            # action to do
         self.set_state(VS.ACTIVE)  # explorer is active since the begin
         self.resc = resc           # reference to the rescuer agent
         self.x = 0                 # current x position relative to the origin 0
@@ -73,37 +70,79 @@ class Explorer(AbstAgent):
         
         #cada explorador faz seu método de busca, por isso divide por nome
         if self.NAME == "EXPLORER1BLUE":
-            # Loop until a CLEAR position is found
+            i=0
             while True:
-                direction = random.randint(0,7)           
+                direction_stack = [0,1,2,3,4,5,6,7]
+                direction = direction_stack[i]          
             # Check if the corresponding position in walls_and_lim is CLEAR
                 if obstacles[direction] == VS.CLEAR:
-                 return Explorer.AC_INCR[direction]
+                    dx,dy = Explorer.AC_INCR[direction]
+                    explorado = dfs_search(self.map, self.x, self.y, dx, dy)
+                    if not explorado:
+                        return Explorer.AC_INCR[direction]
+                    else:
+                        i+=1
+                else:
+                    i+=1
+                if i>6:
+                    self.return_position()
+                    i=0
+                        
         elif self.NAME == "EXPLORER2GREEN":
-            # Loop until a CLEAR position is found
-            while True:  
-                direction = random.randint(0,7)         
-            # Check if the corresponding position in walls_and_lim is CLEAR
-                if obstacles[direction] == VS.CLEAR:
-                 return Explorer.AC_INCR[direction]
-        elif self.NAME == "EXPLORER3PURPLE":
-            # Loop until a CLEAR position is foun 
+            i=0
             while True:
-                direction = random.randint(0,7)      
-                self.action = direction
-                online_dfs_agent(self.dfs_stack, self.direction_stack, self.action)
+                direction_stack = [7,6,5,4,3,2,1,0]
+                direction = direction_stack[i]          
             # Check if the corresponding position in walls_and_lim is CLEAR
                 if obstacles[direction] == VS.CLEAR:
-                 self.dfs_stack.push((self.x, self.y))
-                 self.direction_stack.push(direction)
-                 return Explorer.AC_INCR[direction]
+                    dx,dy = Explorer.AC_INCR[direction]
+                    explorado = dfs_search(self.map, self.x, self.y, dx, dy)
+                    if not explorado:
+                        return Explorer.AC_INCR[direction]
+                    else:
+                        i+=1
+                else:
+                    i+=1
+                if i>6:
+                    self.return_position()
+                    i=0
+                    
+        elif self.NAME == "EXPLORER3PURPLE":
+            i=0
+            while True:
+                direction_stack = [3,1,7,6,4,5,2]
+                direction = direction_stack[i]       
+            # Check if the corresponding position in walls_and_lim is CLEAR
+                if obstacles[direction] == VS.CLEAR:
+                    dx,dy = Explorer.AC_INCR[direction]
+                    explorado = dfs_search(self.map, self.x, self.y, dx, dy)
+                    if not explorado:
+                        return Explorer.AC_INCR[direction]
+                    else:
+                        i+=1
+                else:
+                    i+=1
+                if i>6:
+                    self.return_position()
+                    i=0
         else:
-            # Loop until a CLEAR position is found
-            while True:   
-                direction = random.randint(0,7)       
+            i=0
+            while True:
+                direction_stack = [6,1,3,5,2,4,7]
+                direction = direction_stack[i]          
             # Check if the corresponding position in walls_and_lim is CLEAR
                 if obstacles[direction] == VS.CLEAR:
-                 return Explorer.AC_INCR[direction]
+                    dx,dy = Explorer.AC_INCR[direction]
+                    explorado = dfs_search(self.map, self.x, self.y, dx, dy)
+                    if not explorado:
+                        return Explorer.AC_INCR[direction]
+                    else:
+                        i+=1
+                else:
+                    i+=1
+                if i>6:
+                    self.return_position()
+                    i=0
         
     def explore(self):
         # get an random increment for x and y       
@@ -280,21 +319,29 @@ class Explorer(AbstAgent):
 
         #combined maps
         merged_maps.map_data = { **exp1_map.map_data, **exp2_map.map_data, **exp3_map.map_data, **exp4_map.map_data}
-        
-
-        #função para clusterização e divisão de vitimas por agente resgatador
         victims_clustering(merged_victims)
         self.resc.go_save_victims(merged_maps, merged_victims) 
+          
+    def return_position(self):
+        dx, dy = self.walk_stack.pop()
+        dx = dx * -1
+        dy = dy * -1
+        result = self.walk(dx, dy)
         
-def online_dfs_agent(dfs_stack, direction_stack, action):
-    df_result = pd.DataFrame(columns=['0', '1', '2', '3', '4', '5', '6', '7'])
-    df_untried = pd.DataFrame(columns=['0', '1', '2', '3', '4', '5', '6', '7'])
-    df_unbacktracked = pd.DataFrame(columns=['0', '1', '2', '3', '4', '5', '6', '7'])
-    previous_state =[]
-    print("WALK_STACK_ITEMS BLUE")
-    print(dfs_stack.items)
-    print(direction_stack.items)
-    print(action)
+        if result == VS.BUMPED:
+            return
+        
+        if result == VS.EXECUTED:
+            self.x += dx
+            self.y += dy
+        
+
+def dfs_search(mapa, actual_x, actual_y, dx, dy):
+    next_position = (actual_x+dx, actual_y+dy)
+    if next_position in mapa.map_data:
+        return True
+    else:
+        return False
     
 
 
