@@ -155,61 +155,20 @@ def astar(maze, start, end, cost_line, cost_diag, allow_diagonal_movement = True
 
     warn("Couldn't get a path to destination")
     return None
-
-def example(print_maze = False):
-    #0=caminho livre
-    #1=obstaculo
-    maze = [[0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,] * 2,
-            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,] * 2,
-            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,] * 2,
-            [0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,] * 2,
-            [0,0,0,1,1,0,0,1,1,1,1,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,] * 2,
-            [0,0,0,1,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,1,0,1,0,] * 2,
-            [0,0,0,1,0,1,1,1,1,0,1,1,0,0,1,1,1,0,0,0,1,1,1,1,1,1,1,0,0,0,] * 2,
-            [0,0,0,1,0,1,0,0,0,0,0,1,0,0,0,0,1,1,0,1,0,0,0,0,0,0,1,1,1,0,] * 2,
-            [0,0,0,1,0,1,1,0,1,1,0,1,1,1,0,0,0,0,0,1,0,0,1,1,1,1,1,0,0,0,] * 2,
-            [0,0,0,1,0,1,0,0,0,0,0,0,0,1,1,1,1,1,1,1,0,0,0,0,1,0,1,0,1,1,] * 2,
-            [0,0,0,1,0,1,0,1,1,0,1,1,1,1,0,0,1,1,1,1,1,1,1,0,1,0,1,0,0,0,] * 2,
-            [0,0,0,1,0,1,0,0,0,0,1,0,0,0,0,0,0,0,0,0,1,0,0,0,1,0,1,1,1,0,] * 2,
-            [0,0,0,1,0,1,1,1,1,0,1,0,0,1,1,1,0,1,1,1,1,0,1,1,1,0,1,0,0,0,] * 2,
-            [0,0,0,1,0,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,1,0,1,1,] * 2,
-            [0,0,0,1,0,0,0,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0,] * 2,
-            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,] * 2,]
-    
-    start = (0, 0)
-    end = (len(maze)-1, len(maze[0])-1)
-
-    path = astar(maze, start, end)
-
-    if print_maze:
-      for step in path:
-        maze[step[0]][step[1]] = 2
-      
-      for row in maze:
-        line = []
-        for col in row:
-          if col == 1:
-            line.append("\u2588")
-          elif col == 0:
-            line.append(" ")
-          elif col == 2:
-            line.append(".")
-        print("".join(line))
-
-    print(path)
-    
+   
 def solve_comeback(actual_x, actual_y, adj_map, base_x, base_y, cost_line, cost_diag):
-        start = (actual_x,actual_y)
-        end = (base_x,base_y)
-        path = astar(adj_map,start,end, cost_line, cost_diag)
-        time_to_base = 0
-        for i in range(0,len(path.items)-1):
+        '''revolve retorno e tempo de retorno do agente para base'''
+        start = (actual_x,actual_y)    #posição atual de inicio
+        end = (base_x,base_y) #posição final (base)
+        path = astar(adj_map,start,end, cost_line, cost_diag) #função que retorna caminho
+        #calculo do tempo
+        time_to_base = 0                                      
+        for i in range(0,len(path.items)-1):                  #veriica se caminho é reto ou diagonal e passa custo
           dif_x = abs(path.items[i][0]-path.items[i+1][0])  
           dif_y = abs(path.items[i][1]-path.items[i+1][1]) 
           if (dif_x+dif_y) == 1:
             time_to_base = time_to_base+cost_line*adj_map[path.items[i+1][1]][path.items[i+1][0]]
           else:
-            time_to_base = time_to_base+cost_diag*adj_map[path.items[i+1][1]][path.items[i+1][0]]
-        # print(time_to_base)    
+            time_to_base = time_to_base+cost_diag*adj_map[path.items[i+1][1]][path.items[i+1][0]]   
         return path, time_to_base
         
