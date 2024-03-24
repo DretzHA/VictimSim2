@@ -14,6 +14,8 @@ from vs.abstract_agent import AbstAgent
 from vs.constants import VS
 from map import Map
 from clustering import victims_clustering
+import numpy as np
+import test_astar
 
 exp1_finished = False
 exp2_finished = False
@@ -52,6 +54,7 @@ class Explorer(AbstAgent):
         """
         super().__init__(env, config_file)
         self.walk_stack = Stack()  # a stack to store the movements
+        self.path = Stack()
         self.set_state(VS.ACTIVE)  # explorer is active since the begin
         self.resc = resc           # reference to the rescuer agent
         self.x = 0                 # current x position relative to the origin 0
@@ -71,13 +74,14 @@ class Explorer(AbstAgent):
         #cada explorador faz seu método de busca, por isso divide por nome
         if self.NAME == "EXPLORER1BLUE":
             i=0
+            first_int = True
             while True:
                 direction_stack = [0,1,2,3,4,5,6,7]
                 direction = direction_stack[i]          
             # Check if the corresponding position in walls_and_lim is CLEAR
                 if obstacles[direction] == VS.CLEAR:
                     dx,dy = Explorer.AC_INCR[direction]
-                    explorado = dfs_search(self.map, self.x, self.y, dx, dy)
+                    explorado = self.state_explored(self.map, self.x, self.y, dx, dy)
                     if not explorado:
                         return Explorer.AC_INCR[direction]
                     else:
@@ -96,7 +100,7 @@ class Explorer(AbstAgent):
             # Check if the corresponding position in walls_and_lim is CLEAR
                 if obstacles[direction] == VS.CLEAR:
                     dx,dy = Explorer.AC_INCR[direction]
-                    explorado = dfs_search(self.map, self.x, self.y, dx, dy)
+                    explorado = self.state_explored(self.map, self.x, self.y, dx, dy)
                     if not explorado:
                         return Explorer.AC_INCR[direction]
                     else:
@@ -115,7 +119,7 @@ class Explorer(AbstAgent):
             # Check if the corresponding position in walls_and_lim is CLEAR
                 if obstacles[direction] == VS.CLEAR:
                     dx,dy = Explorer.AC_INCR[direction]
-                    explorado = dfs_search(self.map, self.x, self.y, dx, dy)
+                    explorado = self.state_explored(self.map, self.x, self.y, dx, dy)
                     if not explorado:
                         return Explorer.AC_INCR[direction]
                     else:
@@ -133,7 +137,7 @@ class Explorer(AbstAgent):
             # Check if the corresponding position in walls_and_lim is CLEAR
                 if obstacles[direction] == VS.CLEAR:
                     dx,dy = Explorer.AC_INCR[direction]
-                    explorado = dfs_search(self.map, self.x, self.y, dx, dy)
+                    explorado = self.state_explored(self.map, self.x, self.y, dx, dy)
                     if not explorado:
                         return Explorer.AC_INCR[direction]
                     else:
@@ -194,6 +198,9 @@ class Explorer(AbstAgent):
         dx = dx * -1
         dy = dy * -1
 
+        print(f"atual {self.x} : {self.y}")
+        print(f"dx {dx} : dy {dy}")
+        
         result = self.walk(dx, dy)
         if result == VS.BUMPED:
             print(f"{self.NAME}: when coming back bumped at ({self.x+dx}, {self.y+dy}) , rtime: {self.get_rtime()}")
@@ -203,7 +210,7 @@ class Explorer(AbstAgent):
             # update the agent's position relative to the origin
             self.x += dx
             self.y += dy
-            #print(f"{self.NAME}: coming back at ({self.x}, {self.y}), rtime: {self.get_rtime()}")
+            print(f"{self.NAME}: coming back at ({self.x}, {self.y}), rtime: {self.get_rtime()}")
         
     def deliberate(self) -> bool:
         """ The agent chooses the next action. The simulator calls this
@@ -221,13 +228,14 @@ class Explorer(AbstAgent):
         global exp2_victims
         global exp3_victims
         global exp4_victims
-
+        
         if self.NAME == "EXPLORER1BLUE":
+            self.path, time_to_base = self.astar_method(self.map, self.x, self.y)
             consumed_time = self.TLIM - self.get_rtime()
             if consumed_time < self.get_rtime():
                 self.explore()
                 return True
-            if self.walk_stack.is_empty() or (self.x == 0 and self.y == 0):
+            if self.path.is_empty() or (self.x == 0 and self.y == 0):
                 # time to come back to the base
                 # time to wake up the rescuer
                 # pass the walls and the victims (here, they're empty)
@@ -237,15 +245,16 @@ class Explorer(AbstAgent):
                 print(f"{self.NAME}: rtime {self.get_rtime()}, invoking the rescuer")
                 #input(f"{self.NAME}: type [ENTER] to proceed")
                 #se todos exploradores finalizaram, chama função de unificar
-                if exp1_finished & exp2_finished & exp3_finished & exp4_finished:
+                if exp1_finished:
                     self.unifica(exp1_map,exp2_map,exp3_map,exp4_map,exp1_victims,exp2_victims,exp3_victims,exp4_victims)  
-                    
                     return False
+                
             else:
                 self.come_back()
                 return True
             
         elif self.NAME == "EXPLORER2GREEN":
+            # print(f"explorer: {self.NAME} . Time to base: {time_to_base}.")
             consumed_time = self.TLIM - self.get_rtime()
             if consumed_time < self.get_rtime():
                 self.explore()
@@ -263,11 +272,13 @@ class Explorer(AbstAgent):
                 if exp1_finished & exp2_finished & exp3_finished & exp4_finished:
                     self.unifica(exp1_map,exp2_map,exp3_map,exp4_map,exp1_victims,exp2_victims,exp3_victims,exp4_victims)  
                     return False
+
             else:
                 self.come_back()
                 return True
 
         elif self.NAME == "EXPLORER3PURPLE":
+            # print(f"explorer: {self.NAME} . Time to base: {time_to_base}.")
             consumed_time = self.TLIM - self.get_rtime()
             if consumed_time < self.get_rtime():
                 self.explore()
@@ -291,6 +302,7 @@ class Explorer(AbstAgent):
 
         else:
             consumed_time = self.TLIM - self.get_rtime()
+            # print(f"explorer: {self.NAME} . Time to base: {time_to_base}.")
             if consumed_time < self.get_rtime():
                 self.explore()
                 return True
@@ -321,13 +333,14 @@ class Explorer(AbstAgent):
         merged_maps.map_data = { **exp1_map.map_data, **exp2_map.map_data, **exp3_map.map_data, **exp4_map.map_data}
         victims_clustering(merged_victims)
         self.resc.go_save_victims(merged_maps, merged_victims) 
-          
+      
     def return_position(self):
+ 
         dx, dy = self.walk_stack.pop()
         dx = dx * -1
         dy = dy * -1
         result = self.walk(dx, dy)
-        
+               
         if result == VS.BUMPED:
             return
         
@@ -336,12 +349,29 @@ class Explorer(AbstAgent):
             self.y += dy
         
 
-def dfs_search(mapa, actual_x, actual_y, dx, dy):
-    next_position = (actual_x+dx, actual_y+dy)
-    if next_position in mapa.map_data:
-        return True
-    else:
-        return False
+    def state_explored(self, mapa, actual_x, actual_y, dx, dy):
+        next_position = (actual_x+dx, actual_y+dy)
+        if next_position in mapa.map_data:
+            return True
+        else:
+            return False
+        
+    def astar_method(self,mapa,actual_x,actual_y):  
+        max_x = 0
+        max_y = 0
+        for key in mapa.map_data.keys():
+            if key[0] > max_x:
+                max_x = key[0]
+            if key[1] > max_y:
+                max_y = key[1]
+        
+        tam_maze = max(max_x,max_y)+1
+        maze_matrix=np.full((tam_maze+1,tam_maze+1), 100.0)
+        for i in mapa.map_data.keys():
+            maze_matrix[i[1]][i[0]] = mapa.map_data.get(i)[0]        
+        path, time_to_base = test_astar.solve_comeback(actual_x,actual_y,maze_matrix,0,0, self.COST_LINE, self.COST_DIAG)
+    
+        return path, time_to_base
     
 
 
