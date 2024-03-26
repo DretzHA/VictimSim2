@@ -309,6 +309,7 @@ class Env:
                         else:
                             print("ENV: ag " + body.mind.NAME + " is not at the base and asked for termination. Now, it's dead")
                             body._state = VS.DEAD
+                            body.mind.deliberate()
 
                 elif body._state == VS.IDLE:
                     active_or_idle = True

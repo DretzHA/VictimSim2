@@ -72,6 +72,7 @@ class Explorer(AbstAgent):
         self.count_astar = 0       #quantidade de explorar até refazer metodo A*
         # put the current position - the base - in the map
         self.map.add((self.x, self.y), 1, VS.NO_VICTIM, self.check_walls_and_lim())
+        self.tempo_apos_astar = self.TLIM #tempo inicial restante
 
     def get_next_position(self):
         # Check the neighborhood walls and grid limits
@@ -81,7 +82,7 @@ class Explorer(AbstAgent):
         if self.NAME == "EXPLORER1BLUE":
             i=0
             while True:
-                direction_stack = [0,1,2,3,4,5,6,7] #ordem de direção a explorar
+                direction_stack = [0,6,2,4] #ordem de direção a explorar
                 direction = direction_stack[i]          
             # Check if the corresponding position in walls_and_lim is CLEAR
                 if obstacles[direction] == VS.CLEAR:
@@ -93,14 +94,15 @@ class Explorer(AbstAgent):
                         i+=1 #se já foi explorado, tenta outra posição
                 else:
                     i+=1 #se há obstaculo, tenta outra posição
-                if i>7:
-                    return self.walk_stack.pop() #caso não tenha mais opções, retorna uma posição e tenta explorar novamente
+                if i>3:
+                    self.retorna_position() #caso não tenha mais opções, retorna uma posição e tenta explorar novamente
+                    i=0
         
                         
         elif self.NAME == "EXPLORER2GREEN":
             i=0
             while True:
-                direction_stack = [7,6,5,4,3,2,1,0] #ordem de direção a explorar
+                direction_stack = [2,6,0,4] #ordem de direção a explorar
                 direction = direction_stack[i]          
             # Check if the corresponding position in walls_and_lim is CLEAR
                 if obstacles[direction] == VS.CLEAR:
@@ -112,14 +114,14 @@ class Explorer(AbstAgent):
                         i+=1 #se já foi explorado, tenta outra posição
                 else:
                     i+=1 #se há obstaculo, tenta outra posição
-                if i>7:
-                    return self.walk_stack.pop() #caso não tenha mais opções, retorna uma posição e tenta explorar novamente
-                
+                if i>3:
+                    self.retorna_position() #caso não tenha mais opções, retorna uma posição e tenta explorar novamente
+                    i=0
                     
         elif self.NAME == "EXPLORER3PURPLE":
             i=0
             while True:
-                direction_stack = [3,1,7,6,4,5,2,0] #ordem de direção a explorar
+                direction_stack = [4,2,0,6] #ordem de direção a explorar
                 direction = direction_stack[i]       
             # Check if the corresponding position in walls_and_lim is CLEAR
                 if obstacles[direction] == VS.CLEAR:
@@ -131,13 +133,13 @@ class Explorer(AbstAgent):
                         i+=1 #se já foi explorado, tenta outra posição
                 else:
                     i+=1 #se há obstaculo, tenta outra posição
-                if i>7:
-                    return self.walk_stack.pop() #caso não tenha mais opções, retorna uma posição e tenta explorar novamente
-                    
+                if i>3:
+                    self.retorna_position() #caso não tenha mais opções, retorna uma posição e tenta explorar novamente
+                    i=0
         else:
             i=0
             while True:
-                direction_stack = [6,1,3,5,2,4,0,7] #ordem de direção a explorar
+                direction_stack = [6,4,2,0] #ordem de direção a explorar
                 direction = direction_stack[i]          
             # Check if the corresponding position in walls_and_lim is CLEAR
                 if obstacles[direction] == VS.CLEAR:
@@ -149,17 +151,17 @@ class Explorer(AbstAgent):
                         i+=1 #se já foi explorado, tenta outra posição
                 else:
                     i+=1
-                if i>7:
-                    return self.walk_stack.pop() #caso não tenha mais opções, retorna uma posição e tenta explorar novamente
-                    
+                if i>3:
+                    self.retorna_position() #caso não tenha mais opções, retorna uma posição e tenta explorar novamente
+                    i=0
         
     def explore(self):
         # get an increment for x and y       
-        try:                           #caso tenha uma exceção de erro, fica parada até próximo passo
-            dx, dy = self.get_next_position()
-        except:
-            dx=0
-            dy=0
+        #try:                           #caso tenha uma exceção de erro, fica parada até próximo passo
+        dx, dy = self.get_next_position()
+        # except:
+        #     dx=0
+        #     dy=0
         # Moves the body to another position
         rtime_bef = self.get_rtime()
         result = self.walk(dx, dy)
@@ -203,12 +205,17 @@ class Explorer(AbstAgent):
         return
 
     def come_back(self):
+        print(f"{self.NAME} coming back!!!")
         #MÉTODO 2
         '''função de retorno para base, conforme caminho fornecido pelo A*'''
         tx, ty = self.path.pop()  #pega proxima posição a retornar       
         dx = tx-self.x            #diferença entre posição atual e a proxima
         dy = ty - self.y          #diferença entre posição atual e a proxima
 
+        # print(f"dx: {dx}, dy: {dy}")
+        # print(f"Tempo estimato base: {self.time_to_base}")
+        # print(f"Tempo restante: {self.get_rtime()}")
+        # print(f" ")
         #MÉTODO 1
         # dx, dy = self.walk_stack.pop()
         # dx = dx * -1
@@ -242,6 +249,8 @@ class Explorer(AbstAgent):
         global exp3_victims
         global exp4_victims
         
+        div_astar = 10
+        
         if self.NAME == "EXPLORER1BLUE":   
             #MÉTODO 1       
             # consumed_time = self.TLIM - self.get_rtime()
@@ -251,12 +260,15 @@ class Explorer(AbstAgent):
             #     return True
             
             #MÉTODO 2
-            if (self.time_to_base*5 < self.get_rtime()) and (self.returning==0): #tempo de retornar é menor que tempo restante, continua a explorar
+
+            
+            if (self.time_to_base*4 < self.tempo_apos_astar) and (self.returning==0): #tempo de retornar é menor que tempo restante, continua a explorar
                 if self.count_astar == 0:
                     self.path, self.time_to_base = self.astar_method(self.map, self.x, self.y)
+                    self.tempo_apos_astar = self.get_rtime()
                 self.explore()
                 self.count_astar += 1
-                if self.count_astar >= 9:
+                if (self.count_astar) >= div_astar:
                     self.count_astar=0
                 return True
             if self.path.is_empty() or (self.x == 0 and self.y == 0):
@@ -278,7 +290,10 @@ class Explorer(AbstAgent):
                 self.come_back()
                 return True
             
+            
+            
         elif self.NAME == "EXPLORER2GREEN":
+            
             #MÉTODO 1       
             # consumed_time = self.TLIM - self.get_rtime()
             # if (consumed_time < self.get_rtime()) and (self.returning==0): #tempo de retornar é menor que tempo restante, continua a explorar
@@ -287,12 +302,13 @@ class Explorer(AbstAgent):
             #     return True
             
             #MÉTODO 2
-            if (self.time_to_base*5 < self.get_rtime()) and (self.returning==0): #tempo de retornar é menor que tempo restante, continua a explorar
+            if (self.time_to_base*4 < self.tempo_apos_astar) and (self.returning==0): #tempo de retornar é menor que tempo restante, continua a explorar
                 if self.count_astar == 0:
                     self.path, self.time_to_base = self.astar_method(self.map, self.x, self.y)
+                    self.tempo_apos_astar = self.get_rtime()
                 self.explore()
                 self.count_astar += 1
-                if self.count_astar >= 9:
+                if (self.count_astar) >= div_astar:
                     self.count_astar=0
                 return True
             if self.path.is_empty() or (self.x == 0 and self.y == 0):
@@ -315,6 +331,7 @@ class Explorer(AbstAgent):
                 return True
 
         elif self.NAME == "EXPLORER3PURPLE":
+
             #MÉTODO 1       
             # consumed_time = self.TLIM - self.get_rtime()
             # if (consumed_time < self.get_rtime()) and (self.returning==0): #tempo de retornar é menor que tempo restante, continua a explorar
@@ -323,12 +340,13 @@ class Explorer(AbstAgent):
             #     return True
             
             #MÉTODO 2
-            if (self.time_to_base*5 < self.get_rtime()) and (self.returning==0): #tempo de retornar é menor que tempo restante, continua a explorar
+            if (self.time_to_base*4 < self.tempo_apos_astar) and (self.returning==0): #tempo de retornar é menor que tempo restante, continua a explorar
                 if self.count_astar == 0:
                     self.path, self.time_to_base = self.astar_method(self.map, self.x, self.y)
+                    self.tempo_apos_astar = self.get_rtime()
                 self.explore()
                 self.count_astar += 1
-                if self.count_astar >= 9:
+                if (self.count_astar) >= div_astar:
                     self.count_astar=0
                 return True
             if self.path.is_empty() or (self.x == 0 and self.y == 0):
@@ -356,15 +374,16 @@ class Explorer(AbstAgent):
             # if (consumed_time < self.get_rtime()) and (self.returning==0): #tempo de retornar é menor que tempo restante, continua a explorar
             #     # self.path, self.time_to_base = self.astar_method(self.map, self.x, self.y)
             #     self.explore()
-            #     return True
+            #     return True 
             
             #MÉTODO 2
-            if (self.time_to_base*5 < self.get_rtime()) and (self.returning==0): #tempo de retornar é menor que tempo restante, continua a explorar
+            if (self.time_to_base*4 < self.tempo_apos_astar) and (self.returning==0): #tempo de retornar é menor que tempo restante, continua a explorar
                 if self.count_astar == 0:
                     self.path, self.time_to_base = self.astar_method(self.map, self.x, self.y)
+                    self.tempo_apos_astar = self.get_rtime()
                 self.explore()
                 self.count_astar += 1
-                if self.count_astar >= 9:
+                if (self.count_astar) >= div_astar:
                     self.count_astar=0
                 return True
             if self.path.is_empty() or (self.x == 0 and self.y == 0):
@@ -413,9 +432,10 @@ class Explorer(AbstAgent):
         max_y = 0
         min_x = 0
         min_y = 0
-        abs_map = mapa.map_data.copy() #copia do mapa recebido
+        #abs_map = mapa.map_data.copy() #copia do mapa recebido
+        abs_map = dict()
         
-        for key in abs_map.keys():            #verifica qual menos posição relativa
+        for key in mapa.map_data.keys():            #verifica qual menos posição relativa
             if key[0] < min_x:                #para fazer uma alteração em relação as coordenadas do mapa
                 min_x = key[0]
             if key[1] < min_y:
@@ -425,10 +445,11 @@ class Explorer(AbstAgent):
         new_x = actual_x - min_x
         new_y = actual_y - min_y
         
-        for key in abs_map.copy():                        #altera posição do mapa relativo
+        for key in mapa.map_data.keys():                        #altera posição do mapa relativo
             new_k0 = key[0] - min_x
             new_k1 = key[1] - min_y
-            abs_map[(new_k0, new_k1)] = abs_map[key]
+            abs_map[(new_k0, new_k1)] = mapa.map_data[key]
+           # del abs_map[key]               #NOVO
             
         for key in abs_map.keys():         #adquire maior indices para criar matriz de posições
             if key[0] > max_x:
@@ -437,17 +458,39 @@ class Explorer(AbstAgent):
                 max_y = key[1]
             
         tam_maze = max(max_x,max_y)+1   #tamanho matriz
-        maze_matrix=np.full((tam_maze+1,tam_maze+1), 100.0)     #preenche matriz com dificuldade 100
+        maze_matrix=np.full((tam_maze,tam_maze), 100.0)     #preenche matriz com dificuldade 100
         for i in abs_map.keys():      
-            maze_matrix[i[1]][i[0]] = abs_map.get(i)[0]       #altera matriz com as posi;óe e dificuldades conhecidas   
-        path, time_to_base = test_astar.solve_comeback(new_x,new_y,maze_matrix,base_x,base_y, self.COST_LINE, self.COST_DIAG) #função A*
+            #maze_matrix[i[1]][i[0]] = abs_map.get(i)[0]       #altera matriz com as posi;óe e dificuldades conhecidas  
+            maze_matrix[i[1]][i[0]] = abs_map.get(i)[0] 
         
+        path, time_to_base = test_astar.solve_comeback(new_x,new_y,maze_matrix,base_x,base_y, self.COST_LINE, self.COST_DIAG) #função A*
         
         for i in range(0,len(path.items)):
             path.items[i] = (path.items[i][0] + min_x, path.items[i][1] + min_y)  #retorna posições absoluta matriz para relativa do mapa do agente
-            
+                      
         return path, time_to_base
     
 
-
+    def retorna_position(self):
+        if self.walk_stack.is_empty():
+            obstacles = self.check_walls_and_lim()
+            for i in range(0,7):
+                if obstacles[i] == VS.CLEAR:
+                    dx,dy = Explorer.AC_INCR[i]  
+        else:
+            dx, dy = self.walk_stack.pop()
+            dx = dx * -1
+            dy = dy * -1
+        
+        result = self.walk(dx, dy)
+        if result == VS.BUMPED:
+            #print(f"{self.NAME}: when coming back bumped at ({self.x+dx}, {self.y+dy}) , rtime: {self.get_rtime()}")
+            return
+        
+        if result == VS.EXECUTED:
+            # update the agent's position relative to the origin
+            self.x += dx
+            self.y += dy
+            #print(f"{self.NAME}: coming back at ({self.x}, {self.y}), rtime: {self.get_rtime()}")
+        
         

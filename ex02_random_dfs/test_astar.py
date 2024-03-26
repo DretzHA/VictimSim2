@@ -56,7 +56,7 @@ def return_path(current_node):
     return path
 
 
-def astar(maze, start, end, cost_line, cost_diag, allow_diagonal_movement = True):
+def astar(maze, start, end, cost_line, cost_diag, allow_diagonal_movement = False):
     """
     Returns a list of tuples as a path from the given start to the given end in the given maze
     :param maze:
@@ -119,7 +119,7 @@ def astar(maze, start, end, cost_line, cost_diag, allow_diagonal_movement = True
                 continue
 
             # Make sure walkable terrain
-            if maze[node_position[1]][node_position[0]] >= 99.0:
+            if maze[node_position[1]][node_position[0]] == 100.0:
                 continue
 
             # Create new node
@@ -170,5 +170,6 @@ def solve_comeback(actual_x, actual_y, adj_map, base_x, base_y, cost_line, cost_
             time_to_base = time_to_base+cost_line*adj_map[path.items[i+1][1]][path.items[i+1][0]]
           else:
             time_to_base = time_to_base+cost_diag*adj_map[path.items[i+1][1]][path.items[i+1][0]]   
+
         return path, time_to_base
         
