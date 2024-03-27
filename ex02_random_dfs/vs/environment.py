@@ -294,6 +294,7 @@ class Env:
                 if body._state == VS.ACTIVE:
                     active_or_idle = True
                     more_actions_to_do = body.mind.deliberate()
+                    
 
                     #if cycle % 50 == 0:
                     #    print(f"ENV: cycle {cycle} {body.mind.NAME} remaining: {body.rtime}")
@@ -302,6 +303,8 @@ class Env:
                     if body._end_of_time():
                         body._state = VS.DEAD
                         print("ENV: " + body.mind.NAME + ": time limit reached, no batt, it is dead")
+                        if "EXPLORER" in body.mind.NAME:
+                            body.mind.ag_dead()
                     elif not more_actions_to_do: # agent do not have more actions to do
                         if body._at_base():
                             print("ENV: ag " + body.mind.NAME + " succesfully terminated, it is at the base")
@@ -309,7 +312,8 @@ class Env:
                         else:
                             print("ENV: ag " + body.mind.NAME + " is not at the base and asked for termination. Now, it's dead")
                             body._state = VS.DEAD
-                            body.mind.deliberate()
+                            
+                            
 
                 elif body._state == VS.IDLE:
                     active_or_idle = True
