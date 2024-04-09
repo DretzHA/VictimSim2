@@ -58,6 +58,7 @@ class Rescuer(AbstAgent):
         for key, value in victims.items():
             if labels[index] == 0:
                 rescuer_1_victims.update({key: value})
+                
             elif labels[index] == 1:
                 rescuer_2_victims.update({key: value})
             elif labels[index] == 2:
@@ -76,17 +77,17 @@ class Rescuer(AbstAgent):
         victims' location. The rescuer becomes ACTIVE. From now,
         the deliberate method is called by the environment"""
 
-        print(f"\n\n*** R E S C U E R ***")
+        print(f"\n\n*** {self.NAME} ***")
         self.map = map
         print(f"{self.NAME} Map received from the explorer")
         self.map.draw()
 
         print()
-        #print(f"{self.NAME} List of found victims received from the explorer")
+        print(f"{self.NAME} List of found victims received from the explorer")
         self.victims = victims
 
         # print the found victims - you may comment out
-        #for seq, data in self.victims.items():
+        # for seq, data in self.victims.items():
         #    coord, vital_signals = data
         #    x, y = coord
         #    print(f"{self.NAME} Victim seq number: {seq} at ({x}, {y}) vs: {vital_signals}")
