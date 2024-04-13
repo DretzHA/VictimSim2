@@ -23,7 +23,7 @@ def train_data_cart():
   validation_data = pd.read_csv("datasets\data_800v\env_vital_signals.txt",  header=None)
   validation_data.columns = ['ID', 'pSist', 'pDiast', 'qPA', 'pulso', 'resp', 'grav', 'classe']
 
-  features = ['pSist', 'pDiast', 'qPA', 'pulso', 'resp']
+  features = ['qPA', 'pulso', 'resp']
   X_train=train_data[features]
 
   Y_train=train_data['classe']
@@ -53,23 +53,26 @@ def train_data_cart():
     pickle.dump(tree_classifier,f)
 
 ######################################REALIZA  A CLASSIFICAÇÃO COM BASE NAS VITIMAS RECEBIDIAS##############################
-def classification_cart():
+def classification_cart(validation_data):
   from sklearn.metrics import accuracy_score, confusion_matrix, ConfusionMatrixDisplay, classification_report
   
   with open('model.pkl', 'rb') as f:
     clf = pickle.load(f)
 
   # Load the test dataset
-  validation_data = pd.read_csv("datasets\data_800v\env_vital_signals.txt",  header=None)  #Substituir pela lista de vitimas
-  validation_data.columns = ['ID', 'pSist', 'pDiast', 'qPA', 'pulso', 'resp', 'grav', 'classe']
-
-  features = ['pSist', 'pDiast', 'qPA', 'pulso', 'resp']
+  #validation_data = pd.read_csv("datasets\data_800v\env_vital_signals.txt",  header=None)  #Substituir pela lista de vitimas
+  #validation_data.columns = ['ID', 'pSist', 'pDiast', 'qPA', 'pulso', 'resp', 'grav', 'classe']
+  features = ['qPA', 'pulso', 'resp']
   X_validation = validation_data[features]
-  Y_validation = validation_data['classe']
+  #Y_validation = validation_data['classe']
   y_pred = clf.predict(X_validation)
-  accuracy_score = accuracy_score(Y_validation, y_pred)
-  print("Accuracy:", accuracy_score)
-  print(classification_report(Y_validation, y_pred))
+  validation_data['classe'] = y_pred
+  
+  return validation_data
+  
+  # accuracy_score = accuracy_score(Y_validation, y_pred)
+  # print("Accuracy:", accuracy_score)
+  # print(classification_report(Y_validation, y_pred))
   
   
 ##########################################FUZY##################################################
@@ -80,8 +83,8 @@ def fuzzy():
   qPA_range = np.arange(-10,10.0,0.1) #qualidade de pressão [5,22]
   pulso_range = np.arange(0,200.0,0.1) #pulsação [5,22]
   resp_range = np.arange(0,22.0,0.1) #freq. respiratória [5,22]
-  pSist = ctrl.Antecedent(pSist_range, 'pSist')
-  pDiast = ctrl.Antecedent(pDiast_range, 'pDiast')
+  #pSist = ctrl.Antecedent(pSist_range, 'pSist')
+  #pDiast = ctrl.Antecedent(pDiast_range, 'pDiast')
   qPA = ctrl.Antecedent(qPA_range, 'qPA')
   pulso = ctrl.Antecedent(pulso_range, 'pulso')
   resp = ctrl.Antecedent(resp_range, 'resp')
@@ -96,26 +99,26 @@ def fuzzy():
   # termos linguísticos para a qualidade de pressão
   qPA['RUIM'] = fuzz.trapmf(qPA.universe, [-10, -10, -5, -2]) + fuzz.trapmf(qPA.universe, [2, 5, 10, 10])
   qPA['BOM'] = fuzz.trimf(qPA.universe, [-3, 0, 3])
-  # qPA.view()
+  qPA.view()
 
   # termos linguísticos para a pulsação
   pulso['BAI'] = fuzz.trapmf(pulso.universe, [0, 0, 50, 70])
   pulso['MED'] = fuzz.trimf(pulso.universe, [60, 100, 120])
   pulso['ALT'] = fuzz.trapmf(pulso.universe, [100, 150, 200, 200])
-  # pulso.view()
+  pulso.view()
 
   # termos linguísticos para a respiração
   resp['BAI'] = fuzz.trapmf(resp.universe, [0, 0, 5, 8])
   resp['MED'] = fuzz.trimf(resp.universe, [6, 9, 14])
   resp['ALT'] = fuzz.trapmf(resp.universe, [12, 15, 22, 22])
-  # resp.view()
+  resp.view()
 
   # termos linguísticos para a classe gravidade
   classe['CRIT'] = fuzz.trapmf(classe.universe, [0, 0, 1, 1.5])
   classe['INST'] = fuzz.trimf(classe.universe, [1, 2, 2.5])
   classe['P_EST'] = fuzz.trimf(classe.universe, [2, 2.5, 3])
   classe['EST'] = fuzz.trapmf(classe.universe, [2.5, 3, 4, 4])
-  # classe.view()
+  classe.view()
   print(f"{classe.terms.keys()} tam = {len(classe.terms.keys())}")
 
 
@@ -250,5 +253,62 @@ def fuzzy():
 
 
 
-train_data_cart()
-classification_cart()
+def dict2df(victims_dict):
+  i = 0
+  for victims_per_agent in victims_dict: 
+    df_victims = pd.DataFrame(columns=['ID', 'posX', 'posY', 'qPA', 'pulso', 'resp']) #cria dataframe 
+    for key, value in victims_per_agent.items():
+        '''passa valores do dict das vitimas para o dataframe'''
+        id_victim = key
+        posx_victim = value[0][0]
+        posy_victim = value[0][1]
+        qPA_victim = value[1][3]
+        pulso_victim = value[1][4]
+        resp_victim = value[1][5]
+        new_row = [id_victim, posx_victim, posy_victim, qPA_victim, pulso_victim, resp_victim] #new row to append in dataframe
+        df_victims.loc[len(df_victims)] = new_row #append row in datafram
+        df_victims['ID']=df_victims['ID'].astype(int)
+        df_victims['posX']=df_victims['posX'].astype(int)
+        df_victims['posY']=df_victims['posY'].astype(int)
+        
+    df_victims = classification_cart(df_victims) #manda dataframe para funcao que vai realizar a classificao por arvore de ddecisao
+    resultado_csv = pd.DataFrame(columns=['ID', 'x', 'y', 'grav', 'classe']) #cria dataframe para gravarr resultados
+    resultado_csv['ID'] = df_victims['ID']
+    resultado_csv['x'] = df_victims['posX']
+    resultado_csv['y'] = df_victims['posY']
+    resultado_csv['classe'] = df_victims['classe']
+    resultado_csv.fillna(0, inplace=True)
+    if i ==0:
+      resultado_csv.to_csv("cluster1.txt", header=False, index=False) #salva resultados cluster1 (vitimas grupo 1)
+    elif i ==1:
+      resultado_csv.to_csv("cluster2.txt", header=False, index=False) #salva resultados cluster2 (vitimas grupo 2)
+    elif i ==2:
+      resultado_csv.to_csv("cluster3.txt", header=False, index=False) #salva resultados cluster3 (vitimas grupo 3)
+    else:
+      resultado_csv.to_csv("cluster4.txt", header=False, index=False) #salva resultados cluster4 (vitimas grupo 4)
+    i+=1
+    
+    j=0
+    for key, value in victims_per_agent.items():
+      '''coloca o valor de gravidade para dentro do dict das vitimas'''
+      classe = df_victims.iloc[j,6]
+      value[1].append(classe)
+      j+=1
+    
+  return victims_dict
+#############################################################################################################################
+
+########################################################PARA REALIZAR O TESTE, BASTA COLOCAR O CAMINHO DO ARQUIVO####################
+data = pd.read_csv("datasets\data_10v_12X12\env_vital_signals.txt",  header=None) # ler dados
+data.columns = ['ID', 'pSist', 'pDiast', 'qPA', 'pulso', 'resp', 'grav', 'classe'] #atribui as colunas ao DF
+#train_data_cart() #funcao treinamento do modelo
+#fuzzy()
+resultado = classification_cart(data) #realiza a classificacao com base nos dados por CART
+
+
+resultado_csv = pd.DataFrame(columns=['ID', 'x', 'y', 'grav', 'classe'])
+resultado_csv['ID'] = resultado['ID']
+resultado_csv['classe'] = resultado['classe']
+resultado_csv.fillna(0, inplace=True)
+resultado_csv.to_csv("pred.txt", header=False, index=False)
+

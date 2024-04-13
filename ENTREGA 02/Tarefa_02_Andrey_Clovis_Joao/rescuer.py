@@ -9,12 +9,15 @@ import os
 import random
 import plotly.express as px
 import numpy as np
+import pandas as pd
+import classificadores as cls
 from map import Map
 from vs.abstract_agent import AbstAgent
 from vs.physical_agent import PhysAgent
 from vs.constants import VS
 from abc import ABC, abstractmethod
 from sklearn.metrics import silhouette_score
+
 
 ## Classe que define o Agente Rescuer com um plano fixo
 
@@ -57,8 +60,7 @@ class Rescuer(AbstAgent):
         index = 0
         for key, value in victims.items():
             if labels[index] == 0:
-                rescuer_1_victims.update({key: value})
-                
+                rescuer_1_victims.update({key: value})               
             elif labels[index] == 1:
                 rescuer_2_victims.update({key: value})
             elif labels[index] == 2:
@@ -67,7 +69,8 @@ class Rescuer(AbstAgent):
                 rescuer_4_victims.update({key: value})
             index += 1
         victims_per_cluster = [rescuer_1_victims, rescuer_2_victims, rescuer_3_victims, rescuer_4_victims]
-        for agent, victims_per_agent in zip(rescuer_agents, victims_per_cluster):
+        victims_per_cluster_grav = cls.dict2df(victims_per_cluster) #funcaoq ue realiza a classificacao e iserção da gravidade no dict das vitimas
+        for agent, victims_per_agent in zip(rescuer_agents, victims_per_cluster_grav):
             agent.mind.go_save_victims(map, victims_per_agent)
 
         #exit() # Fim do projeto 1
