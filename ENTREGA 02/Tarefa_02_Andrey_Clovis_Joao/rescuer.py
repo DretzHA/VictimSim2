@@ -93,7 +93,8 @@ class Rescuer(AbstAgent):
         # for seq, data in self.victims.items():
         #    coord, vital_signals = data
         #    x, y = coord
-        #    print(f"{self.NAME} Victim seq number: {seq} at ({x}, {y}) vs: {vital_signals}")
+        #    grav = vital_signals[6]
+        #    print(f"{self.NAME} Victim seq number: {seq} at ({x}, {y}) vs: {vital_signals}, gravidade: {grav}")
 
         #print(f"{self.NAME} time limit to rescue {self.plan_rtime}")
 
@@ -124,7 +125,7 @@ class Rescuer(AbstAgent):
         else:
             direction_stack = [1, 0, 7, 6, 5, 4 ,3, 2]
 
-        ##print(f"\n{self.NAME} actions results: {actions_res}")
+        #print(f"\n{self.NAME} actions results: {actions_res}")
         for i, ar in enumerate(actions_res):
 
             if ar != VS.CLEAR:
@@ -208,6 +209,7 @@ class Rescuer(AbstAgent):
 
         self.plan_visited.add((0,0)) # always start from the base, so it is already visited
         difficulty, vic_seq, actions_res = self.map.get((0,0))
+        print(actions_res)
         self.__depth_search(actions_res)
 
         # push actions into the plan to come back to the base

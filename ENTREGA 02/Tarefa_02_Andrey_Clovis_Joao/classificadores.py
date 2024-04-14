@@ -10,7 +10,9 @@ import skfuzzy as fuzz
 from skfuzzy import control as ctrl
 import pickle
 from sklearn.metrics import accuracy_score, confusion_matrix, ConfusionMatrixDisplay, classification_report
- 
+pd.set_option('future.no_silent_downcasting', True)
+
+
 ##########################################DECISION TREE TREINAMENTO##################################################
 def train_data_cart():
   from sklearn.metrics import accuracy_score, confusion_matrix, ConfusionMatrixDisplay, classification_report
@@ -76,7 +78,7 @@ def classification_cart(validation_data):
   
   
 ##########################################FUZY##################################################
-def fuzzy():
+def fuzzy(validation_data):
   # variáveis linguisticas de entrada e saída
   pSist_range = np.arange(5,22.0,0.1) #pressão sistólica [5,22]
   pDiast_range = np.arange(0,15.0,0.1) #pressão diastólica [5,22]
@@ -95,31 +97,30 @@ def fuzzy():
   classe_range = np.arange(0, 5, .1)
   classe = ctrl.Consequent(classe_range, 'classe', defuzzify_method='mom')
 
-
   # termos linguísticos para a qualidade de pressão
-  qPA['RUIM'] = fuzz.trapmf(qPA.universe, [-10, -10, -5, -2]) + fuzz.trapmf(qPA.universe, [2, 5, 10, 10])
+  qPA['RUIM'] = fuzz.trapmf(qPA.universe, [-10, -10, -5, -4]) + fuzz.trapmf(qPA.universe, [4, 5, 10, 10])
   qPA['BOM'] = fuzz.trimf(qPA.universe, [-3, 0, 3])
-  qPA.view()
+  #qPA.view()
 
   # termos linguísticos para a pulsação
-  pulso['BAI'] = fuzz.trapmf(pulso.universe, [0, 0, 50, 70])
-  pulso['MED'] = fuzz.trimf(pulso.universe, [60, 100, 120])
-  pulso['ALT'] = fuzz.trapmf(pulso.universe, [100, 150, 200, 200])
-  pulso.view()
+  pulso['BAI'] = fuzz.trapmf(pulso.universe, [0, 0, 50, 59])
+  pulso['MED'] = fuzz.trimf(pulso.universe, [60, 80, 100])
+  pulso['ALT'] = fuzz.trapmf(pulso.universe, [101, 150, 200, 200])
+  #pulso.view()
 
   # termos linguísticos para a respiração
-  resp['BAI'] = fuzz.trapmf(resp.universe, [0, 0, 5, 8])
-  resp['MED'] = fuzz.trimf(resp.universe, [6, 9, 14])
-  resp['ALT'] = fuzz.trapmf(resp.universe, [12, 15, 22, 22])
-  resp.view()
+  resp['BAI'] = fuzz.trapmf(resp.universe, [0, 0, 7, 13])
+  resp['MED'] = fuzz.trimf(resp.universe, [14, 15, 18])
+  resp['ALT'] = fuzz.trapmf(resp.universe, [19, 20, 21, 23])
+  # resp.view()
 
   # termos linguísticos para a classe gravidade
   classe['CRIT'] = fuzz.trapmf(classe.universe, [0, 0, 1, 1.5])
   classe['INST'] = fuzz.trimf(classe.universe, [1, 2, 2.5])
   classe['P_EST'] = fuzz.trimf(classe.universe, [2, 2.5, 3])
   classe['EST'] = fuzz.trapmf(classe.universe, [2.5, 3, 4, 4])
-  classe.view()
-  print(f"{classe.terms.keys()} tam = {len(classe.terms.keys())}")
+  #classe.view()
+  #print(f"{classe.terms.keys()} tam = {len(classe.terms.keys())}")
 
 
   # regras
@@ -174,82 +175,98 @@ def fuzzy():
   sif_ctrl = ctrl.ControlSystem(regras)
   sif = ctrl.ControlSystemSimulation(sif_ctrl)
 
-  # # Entrada de exemplo 8.733333,134.454047,17.972046
-  qPA_input = 8.733333
-  pulso_input = 134.454047
-  resp_input = 17.972046
-  sif.input['qPA'] = qPA_input
-  sif.input['pulso'] = pulso_input
-  sif.input['resp'] = resp_input
+  # # Entrada de exemplo 8.646427,124.052007,8.851257,24.653839,1
+  res_classe = []
+  qPA_df =validation_data['qPA']
+  pulso_df =validation_data['pulso']
+  resp_df =validation_data['resp']
+  for i in range(0,len(validation_data)):
+    qPA_input = qPA_df[i]
+    pulso_input = pulso_df[i]
+    resp_input = resp_df[i]
+    sif.input['qPA'] = qPA_input
+    sif.input['pulso'] = pulso_input
+    sif.input['resp'] = resp_input
 
-  # # Computa a saída
-  sif.compute()
+    # # Computa a saída
+    sif.compute()
 
-  #GRAUS DE PERTINÊNCIA
-  # print(f"\n*** ENTRADAS ***")
-  # print(f"Graus de pertinência da entrada qualidade de pressão = {qPA_input}")
-  mi_qPA =  [0] * len(qPA.terms.keys())
-  i = 0
-  for termo, fuzzy_set in qPA.terms.items():
-      mi_qPA[i] = fuzz.interp_membership(qPA.universe, qPA[termo].mf, qPA_input)
-      # print(f"  ao termo {termo} = {mi_qPA[i]:.3f}")
-      i = i + 1
+    #GRAUS DE PERTINÊNCIA
+    # print(f"\n*** ENTRADAS ***")
+    # print(f"Graus de pertinência da entrada qualidade de pressão = {qPA_input}")
+    mi_qPA =  [0] * len(qPA.terms.keys())
+    i = 0
+    for termo, fuzzy_set in qPA.terms.items():
+        mi_qPA[i] = fuzz.interp_membership(qPA.universe, qPA[termo].mf, qPA_input)
+        # print(f"  ao termo {termo} = {mi_qPA[i]:.3f}")
+        i = i + 1
 
-  # # Plotar o grau de pertinência
-  # qPA.view(sim=sif)
+    # # Plotar o grau de pertinência
+    # qPA.view(sim=sif)
 
-  # print(f"Graus de pertinência da entrada pulso = {pulso_input}")
-  mi_pulso =  [0] * len(pulso.terms.keys())
-  i = 0
-  for termo, fuzzy_set in pulso.terms.items():
-      mi_pulso[i] = fuzz.interp_membership(pulso.universe, pulso[termo].mf, pulso_input)
-      # print(f"  ao termo {termo} = {mi_pulso[i]:.3f}")
-      i = i + 1
+    # print(f"Graus de pertinência da entrada pulso = {pulso_input}")
+    mi_pulso =  [0] * len(pulso.terms.keys())
+    i = 0
+    for termo, fuzzy_set in pulso.terms.items():
+        mi_pulso[i] = fuzz.interp_membership(pulso.universe, pulso[termo].mf, pulso_input)
+        # print(f"  ao termo {termo} = {mi_pulso[i]:.3f}")
+        i = i + 1
 
-  # # Plotar o grau de pertinência
-  # pulso.view(sim=sif)
+    # # Plotar o grau de pertinência
+    # pulso.view(sim=sif)
 
-  # print(f"Graus de pertinência da entrada respiração = {resp_input}")
-  mi_resp =  [0] * len(resp.terms.keys())
-  i = 0
-  for termo, fuzzy_set in resp.terms.items():
-      mi_resp[i] = fuzz.interp_membership(resp.universe, resp[termo].mf, resp_input)
-      # print(f"  ao termo {termo} = {mi_resp[i]:.3f}")
-      i = i + 1
+    # print(f"Graus de pertinência da entrada respiração = {resp_input}")
+    mi_resp =  [0] * len(resp.terms.keys())
+    i = 0
+    for termo, fuzzy_set in resp.terms.items():
+        mi_resp[i] = fuzz.interp_membership(resp.universe, resp[termo].mf, resp_input)
+        # print(f"  ao termo {termo} = {mi_resp[i]:.3f}")
+        i = i + 1
 
 
-  nivel_disparo = [0] * len(regras_alt)          # nivel de disparo por regra
-  nivel_agregado = [0] * len(classe.terms.keys()) # maior nivel de disparo por termo de saída
-  for i, r_alt in enumerate(regras_alt):
-    if r_alt[4] == 1:    # AND
-      nivel_disparo[i] = min(mi_qPA[r_alt[0]], mi_pulso[r_alt[1]], mi_resp[r_alt[2]])
-    else: # OR
-      nivel_disparo[i] = max(mi_qPA[r_alt[0]], mi_pulso[r_alt[1]], mi_resp[r_alt[2]])
+    nivel_disparo = [0] * len(regras_alt)          # nivel de disparo por regra
+    nivel_agregado = [0] * len(classe.terms.keys()) # maior nivel de disparo por termo de saída
+    for i, r_alt in enumerate(regras_alt):
+      if r_alt[4] == 1:    # AND
+        nivel_disparo[i] = min(mi_qPA[r_alt[0]], mi_pulso[r_alt[1]], mi_resp[r_alt[2]])
+      else: # OR
+        nivel_disparo[i] = max(mi_qPA[r_alt[0]], mi_pulso[r_alt[1]], mi_resp[r_alt[2]])
 
-    if nivel_disparo[i] > nivel_agregado[r_alt[3]]:
-      nivel_agregado[r_alt[3]] = nivel_disparo[i]
+      if nivel_disparo[i] > nivel_agregado[r_alt[3]]:
+        nivel_agregado[r_alt[3]] = nivel_disparo[i]
 
-  # print(f"\n*** Nível de disparo por regra ***")
-  # for i, r in enumerate(sif_ctrl.rules):
-  #   print(f"Regra {i}: {r.antecedent} ==> {r.consequent} {nivel_disparo[i]:.3f}")
+    # print(f"\n*** Nível de disparo por regra ***")
+    # for i, r in enumerate(sif_ctrl.rules):
+    #   print(f"Regra {i}: {r.antecedent} ==> {r.consequent} {nivel_disparo[i]:.3f}")
 
-  # print(f"\n*** Agregação dos consequentes das regras ***")
-  # for i, termo in enumerate(classe.terms):
-  #   print(f"{termo} = {nivel_agregado[i]:.3f}")
+    # print(f"\n*** Agregação dos consequentes das regras ***")
+    # for i, termo in enumerate(classe.terms):
+    #   print(f"{termo} = {nivel_agregado[i]:.3f}")
+      
+      
+    # print(f"\nValor de qPA = {qPA_input}, pulso = {pulso_input} e respiração = {resp_input}")
+
+    # Obter o valor desfuzzificado
+    output = sif.output['classe']
+    # print(f"Valor da saida do SIF para a classe de gravidade = {output:.3f} desfuzzificada por {classe.defuzzify_method}")
+
+    # Obter o termo de saida mais relevante a partir do valor desfuzzificado
+    termo_saida = max(classe.terms.keys(), key=lambda term: fuzz.interp_membership(classe.universe, classe[term].mf, output))
+    #print(f"Termo de saída: {termo_saida}\n")
+    if termo_saida =='CRIT':
+      res_classe.append(1)
+    elif termo_saida =='INST':
+      res_classe.append(2)
+    elif termo_saida =='P_EST':
+      res_classe.append(3)
+    else:
+      res_classe.append(4)
+      
+  validation_data['classe'] = res_classe
+  return validation_data
     
-    
-  # print(f"\nValor de qPA = {qPA_input}, pulso = {pulso_input} e respiração = {resp_input}")
-
-  # Obter o valor desfuzzificado
-  output = sif.output['classe']
-  # print(f"Valor da saida do SIF para a classe de gravidade = {output:.3f} desfuzzificada por {classe.defuzzify_method}")
-
-  # Obter o termo de saida mais relevante a partir do valor desfuzzificado
-  termo_saida = max(classe.terms.keys(), key=lambda term: fuzz.interp_membership(classe.universe, classe[term].mf, output))
-  print(f"Termo de saída: {termo_saida}\n")
-
-  # plota os termos linguisticos (conjuntos fuzzy) de saída
-  # classe.view(sim=sif)
+    # plota os termos linguisticos (conjuntos fuzzy) de saída
+    # classe.view(sim=sif)
 
 
 
@@ -271,7 +288,8 @@ def dict2df(victims_dict):
         df_victims['posX']=df_victims['posX'].astype(int)
         df_victims['posY']=df_victims['posY'].astype(int)
         
-    df_victims = classification_cart(df_victims) #manda dataframe para funcao que vai realizar a classificao por arvore de ddecisao
+    #df_victims = classification_cart(df_victims) #manda dataframe para funcao que vai realizar a classificao por arvore de ddecisao
+    df_victims = fuzzy(df_victims) #manda dataframe para funcao que vai realizar a classificao por fuzzy
     resultado_csv = pd.DataFrame(columns=['ID', 'x', 'y', 'grav', 'classe']) #cria dataframe para gravarr resultados
     resultado_csv['ID'] = df_victims['ID']
     resultado_csv['x'] = df_victims['posX']
@@ -299,16 +317,16 @@ def dict2df(victims_dict):
 #############################################################################################################################
 
 ########################################################PARA REALIZAR O TESTE, BASTA COLOCAR O CAMINHO DO ARQUIVO####################
-data = pd.read_csv("datasets\data_10v_12X12\env_vital_signals.txt",  header=None) # ler dados
-data.columns = ['ID', 'pSist', 'pDiast', 'qPA', 'pulso', 'resp', 'grav', 'classe'] #atribui as colunas ao DF
+#data = pd.read_csv("datasets\data_10v_12X12\env_vital_signals.txt",  header=None) # ler dados
+#data.columns = ['ID', 'pSist', 'pDiast', 'qPA', 'pulso', 'resp', 'grav', 'classe'] #atribui as colunas ao DF
 #train_data_cart() #funcao treinamento do modelo
-#fuzzy()
-resultado = classification_cart(data) #realiza a classificacao com base nos dados por CART
 
-
-resultado_csv = pd.DataFrame(columns=['ID', 'x', 'y', 'grav', 'classe'])
-resultado_csv['ID'] = resultado['ID']
-resultado_csv['classe'] = resultado['classe']
-resultado_csv.fillna(0, inplace=True)
-resultado_csv.to_csv("pred.txt", header=False, index=False)
+#resultado = fuzzy(data)
+# resultado = classification_cart(data) #realiza a classificacao com base nos dados por CART
+# resultado_csv = pd.DataFrame(columns=['ID', 'x', 'y', 'grav', 'classe'])
+# resultado_csv['ID'] = resultado['ID']
+# resultado_csv['classe'] = resultado['classe']
+# resultado_csv.fillna(0, inplace=True)
+#print(resultado_csv)
+#resultado_csv.to_csv("pred.txt", header=False, index=False)
 
