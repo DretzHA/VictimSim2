@@ -350,7 +350,21 @@ class Rescuer(AbstAgent):
 
 
     def planner_astar(self,map,victims):
-        map.draw()
-        print(victims.items())
-        print("")
+        prioridades = np.zeros((len(victims.items()),2)) #cria matriz para prioridades
+        j = 0
+        for key, value in victims.items():
+            id_victim = key
+            classe_grav = value[1][6]
+            prioridades[j] = [id_victim,classe_grav] #insere ID (col1) e gravidade(col2) da vitima na matriz
+            j+=1
+        order = np.abs(prioridades[:,1]).argsort() #ordena matriz da maior gravidade para a menos
+        prioridades = prioridades[order[::-1]]
+        for i in range(0,len(prioridades)):
+            for key, value in victims.items():
+                if key == prioridades[i,0]:
+                    print("OBJETIVO ATUAL")
+                    print("x: ", value[0][0])
+                    print("y: ", value[0][1])
+
+            
         
