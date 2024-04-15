@@ -25,7 +25,7 @@ def train_data_cart():
   validation_data = pd.read_csv("datasets\data_800v\env_vital_signals.txt",  header=None)
   validation_data.columns = ['ID', 'pSist', 'pDiast', 'qPA', 'pulso', 'resp', 'grav', 'classe']
 
-  features = ['qPA', 'pulso', 'resp']
+  features = ['qPA', 'pulso', 'resp'] #features do treinamento
   X_train=train_data[features]
 
   Y_train=train_data['classe']
@@ -94,31 +94,31 @@ def fuzzy(validation_data):
   # variável linguística de saida
   # Metodo de desfuzificação
   # 'centroid', 'mom' (mean of maximum), 'bisector'(2 areas iguais a partir do ponto de max), 'som'(smallest of maximum),
-  classe_range = np.arange(0, 5, .1)
+  classe_range = np.arange(0, 100, 1)
   classe = ctrl.Consequent(classe_range, 'classe', defuzzify_method='mom')
 
   # termos linguísticos para a qualidade de pressão
-  qPA['RUIM'] = fuzz.trapmf(qPA.universe, [-10, -10, -5, -4]) + fuzz.trapmf(qPA.universe, [4, 5, 10, 10])
-  qPA['BOM'] = fuzz.trimf(qPA.universe, [-3, 0, 3])
+  qPA['RUIM'] = fuzz.trapmf(qPA.universe, [-10, -10, -5, -3]) + fuzz.trapmf(qPA.universe, [3, 5, 10, 10])
+  qPA['BOM'] = fuzz.trimf(qPA.universe, [-3.5, 0, 3.5])
   #qPA.view()
 
   # termos linguísticos para a pulsação
-  pulso['BAI'] = fuzz.trapmf(pulso.universe, [0, 0, 50, 59])
-  pulso['MED'] = fuzz.trimf(pulso.universe, [60, 80, 100])
-  pulso['ALT'] = fuzz.trapmf(pulso.universe, [101, 150, 200, 200])
+  pulso['BAI'] = fuzz.trapmf(pulso.universe, [0, 0, 50, 70])
+  pulso['MED'] = fuzz.trimf(pulso.universe, [50, 80, 110])
+  pulso['ALT'] = fuzz.trapmf(pulso.universe, [95, 150, 200, 200])
   #pulso.view()
 
   # termos linguísticos para a respiração
   resp['BAI'] = fuzz.trapmf(resp.universe, [0, 0, 7, 13])
-  resp['MED'] = fuzz.trimf(resp.universe, [14, 15, 18])
-  resp['ALT'] = fuzz.trapmf(resp.universe, [19, 20, 21, 23])
+  resp['MED'] = fuzz.trimf(resp.universe, [12.5, 15, 19.5])
+  resp['ALT'] = fuzz.trapmf(resp.universe, [19, 20, 22, 22])
   # resp.view()
 
   # termos linguísticos para a classe gravidade
-  classe['CRIT'] = fuzz.trapmf(classe.universe, [0, 0, 1, 1.5])
-  classe['INST'] = fuzz.trimf(classe.universe, [1, 2, 2.5])
-  classe['P_EST'] = fuzz.trimf(classe.universe, [2, 2.5, 3])
-  classe['EST'] = fuzz.trapmf(classe.universe, [2.5, 3, 4, 4])
+  classe['CRIT'] = fuzz.trapmf(classe.universe, [0, 0, 15, 30])
+  classe['INST'] = fuzz.trimf(classe.universe, [25, 40, 55])
+  classe['P_EST'] = fuzz.trimf(classe.universe, [50, 65, 80])
+  classe['EST'] = fuzz.trapmf(classe.universe, [75, 80, 100, 100])
   #classe.view()
   #print(f"{classe.terms.keys()} tam = {len(classe.terms.keys())}")
 
@@ -133,7 +133,7 @@ def fuzzy(validation_data):
   regras.append(ctrl.Rule(qPA['RUIM'] & pulso['MED'] & resp['MED'], classe['P_EST']))
   regras.append(ctrl.Rule(qPA['RUIM'] & pulso['MED'] & resp['ALT'], classe['CRIT']))
 
-  regras.append(ctrl.Rule(qPA['RUIM'] & pulso['ALT'] & resp['BAI'], classe['INST']))
+  regras.append(ctrl.Rule(qPA['RUIM'] & pulso['ALT'] & resp['BAI'], classe['CRIT']))
   regras.append(ctrl.Rule(qPA['RUIM'] & pulso['ALT'] & resp['MED'], classe['INST']))
   regras.append(ctrl.Rule(qPA['RUIM'] & pulso['ALT'] & resp['ALT'], classe['CRIT']))
 
@@ -158,7 +158,7 @@ def fuzzy(validation_data):
                 [0,1,0,0,1],
                 [0,1,1,2,1],
                 [0,1,2,0,1],
-                [0,2,0,1,1],
+                [0,2,0,0,1],
                 [0,2,1,1,1],
                 [0,2,2,0,1],
                 [1,0,0,1,1],
@@ -175,7 +175,7 @@ def fuzzy(validation_data):
   sif_ctrl = ctrl.ControlSystem(regras)
   sif = ctrl.ControlSystemSimulation(sif_ctrl)
 
-  # # Entrada de exemplo 8.646427,124.052007,8.851257,24.653839,1
+  # # Entrada dos dados das vitimas
   res_classe = []
   qPA_df =validation_data['qPA']
   pulso_df =validation_data['pulso']
@@ -317,16 +317,15 @@ def dict2df(victims_dict):
 #############################################################################################################################
 
 ########################################################PARA REALIZAR O TESTE, BASTA COLOCAR O CAMINHO DO ARQUIVO####################
-#data = pd.read_csv("datasets\data_10v_12X12\env_vital_signals.txt",  header=None) # ler dados
-#data.columns = ['ID', 'pSist', 'pDiast', 'qPA', 'pulso', 'resp', 'grav', 'classe'] #atribui as colunas ao DF
+data = pd.read_csv("datasets\data_800v\env_vital_signals.txt",  header=None) # ler dados
+data.columns = ['ID', 'pSist', 'pDiast', 'qPA', 'pulso', 'resp', 'grav', 'classe'] #atribui as colunas ao DF
 #train_data_cart() #funcao treinamento do modelo
-
-#resultado = fuzzy(data)
-# resultado = classification_cart(data) #realiza a classificacao com base nos dados por CART
-# resultado_csv = pd.DataFrame(columns=['ID', 'x', 'y', 'grav', 'classe'])
-# resultado_csv['ID'] = resultado['ID']
-# resultado_csv['classe'] = resultado['classe']
-# resultado_csv.fillna(0, inplace=True)
+resultado = fuzzy(data)
+#resultado = classification_cart(data) #realiza a classificacao com base nos dados por CART
+resultado_csv = pd.DataFrame(columns=['ID', 'x', 'y', 'grav', 'classe'])
+resultado_csv['ID'] = resultado['ID']
+resultado_csv['classe'] = resultado['classe']
+resultado_csv.fillna(0, inplace=True)
 #print(resultado_csv)
-#resultado_csv.to_csv("pred.txt", header=False, index=False)
+resultado_csv.to_csv("pred.txt", header=False, index=False)
 

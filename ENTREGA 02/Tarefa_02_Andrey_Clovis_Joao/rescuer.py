@@ -98,7 +98,7 @@ class Rescuer(AbstAgent):
 
         #print(f"{self.NAME} time limit to rescue {self.plan_rtime}")
 
-        self.__planner()
+        self.__planner(map, victims)
         print(f"{self.NAME} PLAN")
         i = 1
         self.plan_x = 0
@@ -193,7 +193,7 @@ class Rescuer(AbstAgent):
 
         return
     
-    def __planner(self):
+    def __planner(self,map, victims):
         """ A private method that calculates the walk actions in a OFF-LINE MANNER to rescue the
         victims. Further actions may be necessary and should be added in the
         deliberata method"""
@@ -210,6 +210,7 @@ class Rescuer(AbstAgent):
         self.plan_visited.add((0,0)) # always start from the base, so it is already visited
         difficulty, vic_seq, actions_res = self.map.get((0,0))
         print(actions_res)
+        self.planner_astar(map, victims)
         self.__depth_search(actions_res)
 
         # push actions into the plan to come back to the base
@@ -347,3 +348,9 @@ class Rescuer(AbstAgent):
         inertia = np.sum(np.square(mins))
         return inertia, victims_features
 
+
+    def planner_astar(self,map,victims):
+        map.draw()
+        print(victims.items())
+        print("")
+        
