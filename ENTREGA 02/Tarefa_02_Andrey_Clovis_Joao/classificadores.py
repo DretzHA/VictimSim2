@@ -98,78 +98,100 @@ def fuzzy(validation_data):
   classe = ctrl.Consequent(classe_range, 'classe', defuzzify_method='mom')
 
   # termos linguísticos para a qualidade de pressão
-  qPA['RUIM'] = fuzz.trapmf(qPA.universe, [-10, -10, -5, -4]) + fuzz.trapmf(qPA.universe, [4, 5, 10, 10])
-  qPA['BOM'] = fuzz.trimf(qPA.universe, [-4.5, 0,4.5])
+  qPA['BAI'] = fuzz.trimf(qPA.universe, [-10, -5, -1])
+  qPA['MED'] = fuzz.trimf(qPA.universe, [-3, 0, 3])
+  qPA['ALT'] = fuzz.trimf(qPA.universe, [1, 5, 10])
   #qPA.view()
 
   # termos linguísticos para a pulsação
-  pulso['BAI'] = fuzz.trapmf(pulso.universe, [0, 0, 50, 70])
-  pulso['MED'] = fuzz.trimf(pulso.universe, [50, 80, 110])
-  pulso['ALT'] = fuzz.trapmf(pulso.universe, [95, 150, 200, 200])
+  pulso['BAI'] = fuzz.trimf(pulso.universe, [0, 50, 80])
+  pulso['MED'] = fuzz.trimf(pulso.universe, [60, 85, 110])
+  pulso['ALT'] = fuzz.trimf(pulso.universe, [100, 150, 200])
   #pulso.view()
 
   # termos linguísticos para a respiração
-  resp['BAI'] = fuzz.trapmf(resp.universe, [0, 0, 7, 13])
-  resp['MED'] = fuzz.trimf(resp.universe, [12.5, 15, 19.5])
-  resp['ALT'] = fuzz.trapmf(resp.universe, [19, 20, 22, 22])
+  resp['BAI'] = fuzz.trimf(resp.universe, [0, 5.5, 13])
+  resp['MED'] = fuzz.trimf(resp.universe, [10, 12, 16.5])
+  resp['ALT'] = fuzz.trimf(resp.universe, [14, 16.5, 22])
   # resp.view()
 
   # termos linguísticos para a classe gravidade
-  classe['CRIT'] = fuzz.trapmf(classe.universe, [0, 0, 15, 28])
+  classe['CRIT'] = fuzz.trimf(classe.universe, [0, 20, 30])
   classe['INST'] = fuzz.trimf(classe.universe, [25, 40, 55])
-  classe['P_EST'] = fuzz.trimf(classe.universe, [50, 65, 80])
-  classe['EST'] = fuzz.trapmf(classe.universe, [75, 80, 100, 100])
+  classe['P_EST'] = fuzz.trimf(classe.universe, [50, 60, 80])
+  classe['EST'] = fuzz.trimf(classe.universe, [75, 80, 100])
   #classe.view()
   #print(f"{classe.terms.keys()} tam = {len(classe.terms.keys())}")
 
 
   # regras
   regras = [ ]
-  regras.append(ctrl.Rule(qPA['RUIM'] & pulso['BAI'] & resp['BAI'], classe['CRIT']))
-  regras.append(ctrl.Rule(qPA['RUIM'] & pulso['BAI'] & resp['MED'], classe['INST']))
-  regras.append(ctrl.Rule(qPA['RUIM'] & pulso['BAI'] & resp['ALT'], classe['CRIT']))
+  regras.append(ctrl.Rule(qPA['BAI'] & pulso['BAI'] & resp['BAI'], classe['INST'])) 
+  regras.append(ctrl.Rule(qPA['MED'] & pulso['BAI'] & resp['BAI'], classe['P_EST'])) 
+  regras.append(ctrl.Rule(qPA['ALT'] & pulso['BAI'] & resp['BAI'], classe['INST'])) 
 
-  regras.append(ctrl.Rule(qPA['RUIM'] & pulso['MED'] & resp['BAI'], classe['INST']))
-  regras.append(ctrl.Rule(qPA['RUIM'] & pulso['MED'] & resp['MED'], classe['P_EST']))
-  regras.append(ctrl.Rule(qPA['RUIM'] & pulso['MED'] & resp['ALT'], classe['INST']))
+  regras.append(ctrl.Rule(qPA['BAI'] & pulso['MED'] & resp['BAI'], classe['INST'])) 
+  regras.append(ctrl.Rule(qPA['MED'] & pulso['MED'] & resp['BAI'], classe['P_EST'])) 
+  regras.append(ctrl.Rule(qPA['ALT'] & pulso['MED'] & resp['BAI'], classe['INST'])) 
 
-  regras.append(ctrl.Rule(qPA['RUIM'] & pulso['ALT'] & resp['BAI'], classe['CRIT']))
-  regras.append(ctrl.Rule(qPA['RUIM'] & pulso['ALT'] & resp['MED'], classe['INST']))
-  regras.append(ctrl.Rule(qPA['RUIM'] & pulso['ALT'] & resp['ALT'], classe['CRIT']))
+  regras.append(ctrl.Rule(qPA['BAI'] & pulso['ALT'] & resp['BAI'], classe['INST'])) 
+  regras.append(ctrl.Rule(qPA['MED'] & pulso['ALT'] & resp['BAI'], classe['INST'])) 
+  regras.append(ctrl.Rule(qPA['ALT'] & pulso['ALT'] & resp['BAI'], classe['CRIT'])) 
+  
+  regras.append(ctrl.Rule(qPA['BAI'] & pulso['BAI'] & resp['MED'], classe['INST'])) 
+  regras.append(ctrl.Rule(qPA['MED'] & pulso['BAI'] & resp['MED'], classe['P_EST'])) 
+  regras.append(ctrl.Rule(qPA['ALT'] & pulso['BAI'] & resp['MED'], classe['INST'])) 
 
-  regras.append(ctrl.Rule(qPA['BOM'] & pulso['BAI'] & resp['BAI'], classe['INST']))
-  regras.append(ctrl.Rule(qPA['BOM'] & pulso['BAI'] & resp['MED'], classe['P_EST']))
-  regras.append(ctrl.Rule(qPA['BOM'] & pulso['BAI'] & resp['ALT'], classe['INST']))
+  regras.append(ctrl.Rule(qPA['BAI'] & pulso['MED'] & resp['MED'], classe['P_EST'])) 
+  regras.append(ctrl.Rule(qPA['MED'] & pulso['MED'] & resp['MED'], classe['EST'])) 
+  regras.append(ctrl.Rule(qPA['ALT'] & pulso['MED'] & resp['MED'], classe['INST'])) 
 
-  regras.append(ctrl.Rule(qPA['BOM'] & pulso['MED'] & resp['BAI'], classe['P_EST']))
-  regras.append(ctrl.Rule(qPA['BOM'] & pulso['MED'] & resp['MED'], classe['EST']))
-  regras.append(ctrl.Rule(qPA['BOM'] & pulso['MED'] & resp['ALT'], classe['P_EST']))
+  regras.append(ctrl.Rule(qPA['BAI'] & pulso['ALT'] & resp['MED'], classe['INST'])) 
+  regras.append(ctrl.Rule(qPA['MED'] & pulso['ALT'] & resp['MED'], classe['INST']))
+  regras.append(ctrl.Rule(qPA['ALT'] & pulso['ALT'] & resp['MED'], classe['INST'])) 
 
-  regras.append(ctrl.Rule(qPA['BOM'] & pulso['ALT'] & resp['BAI'], classe['INST']))
-  regras.append(ctrl.Rule(qPA['BOM'] & pulso['ALT'] & resp['MED'], classe['P_EST']))
-  regras.append(ctrl.Rule(qPA['BOM'] & pulso['ALT'] & resp['ALT'], classe['INST']))
+  regras.append(ctrl.Rule(qPA['BAI'] & pulso['BAI'] & resp['ALT'], classe['P_EST'])) 
+  regras.append(ctrl.Rule(qPA['MED'] & pulso['BAI'] & resp['ALT'], classe['P_EST'])) 
+  regras.append(ctrl.Rule(qPA['ALT'] & pulso['BAI'] & resp['ALT'], classe['P_EST'])) 
+
+  regras.append(ctrl.Rule(qPA['BAI'] & pulso['MED'] & resp['ALT'], classe['P_EST'])) 
+  regras.append(ctrl.Rule(qPA['MED'] & pulso['MED'] & resp['ALT'], classe['EST'])) 
+  regras.append(ctrl.Rule(qPA['ALT'] & pulso['MED'] & resp['ALT'], classe['P_EST'])) 
+
+  regras.append(ctrl.Rule(qPA['BAI'] & pulso['ALT'] & resp['ALT'], classe['P_EST'])) 
+  regras.append(ctrl.Rule(qPA['MED'] & pulso['ALT'] & resp['ALT'], classe['P_EST'])) 
+  regras.append(ctrl.Rule(qPA['ALT'] & pulso['ALT'] & resp['ALT'], classe['INST'])) 
   """
   Vamos criar uma representação alternativa das regras para calcularmos os valores de disparo de cada regra, já que o sckfuzzy não deixa acessar diretamente.
   Cada linha representa uma regra. Cada regra faz referência a um termo linguístico. A última coluna diz se é um AND (1) ou um OR (2). 
   """
-  regras_alt = [[0,0,0,0,1],
-                [0,0,1,1,1],
-                [0,0,2,0,1],
+  regras_alt = [[0,0,0,1,1],
+                [1,0,0,2,1],
+                [2,0,0,1,1],
                 [0,1,0,1,1],
-                [0,1,1,2,1],
-                [0,1,2,1,1],
-                [0,2,0,0,1],
-                [0,2,1,1,1],
-                [0,2,2,0,1],
-                [1,0,0,1,1],
-                [1,0,1,2,1],
-                [1,0,2,1,1],
                 [1,1,0,2,1],
-                [1,1,1,3,1],
-                [1,1,2,2,1],
+                [2,1,0,1,1], 
+                [0,2,0,1,1],
                 [1,2,0,1,1],
-                [1,2,1,2,1],
-                [1,2,2,1,1]]
+                [2,2,0,0,1],
+                [0,0,1,1,1],
+                [1,0,1,2,1],
+                [2,0,1,1,1],
+                [0,1,1,2,1],
+                [1,1,1,3,1],
+                [2,1,1,1,1], 
+                [0,2,1,1,1],
+                [1,2,1,1,1],
+                [2,2,2,1,1],
+                [0,0,2,2,1],
+                [1,0,2,2,1],
+                [2,0,2,2,1],
+                [0,1,2,2,1],
+                [1,1,2,3,1],
+                [2,1,2,2,1],
+                [0,2,2,2,1],
+                [1,2,2,2,1],
+                [2,2,2,1,1]]
 
   # # Sistema de fuzzy
   sif_ctrl = ctrl.ControlSystem(regras)
