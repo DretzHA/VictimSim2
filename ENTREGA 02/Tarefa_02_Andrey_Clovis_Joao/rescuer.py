@@ -359,12 +359,12 @@ class Rescuer(AbstAgent):
             j+=1
         order = np.abs(prioridades[:,1]).argsort() #ordena matriz da maior gravidade para a menos
         prioridades = prioridades[order[::-1]]
-        for i in range(0,len(prioridades)):
-            for key, value in victims.items():
-                if key == prioridades[i,0]:
-                    print("OBJETIVO ATUAL")
-                    print("x: ", value[0][0])
-                    print("y: ", value[0][1])
+        # for i in range(0,len(prioridades)):
+        #     for key, value in victims.items():
+        #         if key == prioridades[i,0]:
+        #             # print("OBJETIVO ATUAL")
+        #             # print("x: ", value[0][0])
+        #             # print("y: ", value[0][1])
 
             
         
