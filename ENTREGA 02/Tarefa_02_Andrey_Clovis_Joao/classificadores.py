@@ -3,6 +3,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.tree import DecisionTreeClassifier
+from sklearn.model_selection import train_test_split
 from sklearn.model_selection import ShuffleSplit
 from sklearn.model_selection import GridSearchCV
 from sklearn import tree
@@ -18,28 +19,42 @@ def train_data_cart():
   from sklearn.metrics import accuracy_score, confusion_matrix, ConfusionMatrixDisplay, classification_report
   
   # Load the train dataset
-  train_data = pd.read_csv("datasets\data_4000v\env_vital_signals.txt", header=None)
+  train_data = pd.read_csv("datasets\\data_4000v\\env_vital_signals.txt", header=None)
   train_data.columns = ['ID', 'pSist', 'pDiast', 'qPA', 'pulso', 'resp', 'grav', 'classe']
-
-  # Load the test dataset
-  validation_data = pd.read_csv("datasets\data_800v\env_vital_signals.txt",  header=None)
-  validation_data.columns = ['ID', 'pSist', 'pDiast', 'qPA', 'pulso', 'resp', 'grav', 'classe']
-
   features = ['qPA', 'pulso', 'resp'] #features do treinamento
-  X_train=train_data[features]
+  
+  X = train_data[features]
+  Y = train_data['classe']
+  X_train, X_test, y_train, y_test = train_test_split(X, Y, test_size=0.2, shuffle=True)
+  # Parameters' definition
+  parameters = {
+      'criterion': ['entropy'],
+      'max_depth': [10, 20, 100],
+      'min_samples_leaf': [1, 4, 8]
+  }
 
-  Y_train=train_data['classe']
-  X_validation = validation_data[features]
-  Y_validation = validation_data['classe']
+  tree_classifier = DecisionTreeClassifier(random_state=42)
+  # grid search using cross-validation
+  # cv = 3 is the number of folds
+  # scoring = 'f' the metric for chosing the best model
+  clf = GridSearchCV(tree_classifier, parameters, cv=5, scoring='f1', verbose=4)
+  clf.fit(X_train, y_train)
+  # the best tree according to the f1 score
+  best = clf.best_estimator_
+  print("\n* Melhor classificador *")
+  print(clf.best_estimator_)
+# Predicoes
+# com dados do treinamento
+  y_pred_train = best.predict(X_train)
+  acc_train = accuracy_score(y_train, y_pred_train) * 100
+  print(f"Acuracia com dados de treino: {acc_train:.2f}%")
+
+  # com dados de teste (nao utilizados no treinamento/validacao)
+  y_pred_test = best.predict(X_test)
+  acc_test = accuracy_score(y_test, y_pred_test) * 100
+  print(f"Acuracia com dados de teste: {acc_test:.2f}%")
 
 
-  tree_classifier = DecisionTreeClassifier(random_state=42,criterion='entropy')
-  tree_classifier.fit(X_train,Y_train)
-
-  y_pred = tree_classifier.predict(X_validation)
-  accuracy_score = accuracy_score(Y_validation, y_pred)
-  print("Accuracy:", accuracy_score)
-  print(classification_report(Y_validation, y_pred))
   # cm = confusion_matrix(Y_validation, y_pred, labels=tree_classifier.classes_)
   # disp = ConfusionMatrixDisplay(confusion_matrix=cm,display_labels=tree_classifier.classes_)
   # disp.plot()
@@ -49,10 +64,12 @@ def train_data_cart():
   # tree.plot_tree(tree_classifier)
   # plt.show()
   
+  
+  
   #SAVE MODEL
   
   with open('model.pkl','wb') as f:
-    pickle.dump(tree_classifier,f)
+    pickle.dump(best,f)
 
 ######################################REALIZA  A CLASSIFICAÇÃO COM BASE NAS VITIMAS RECEBIDIAS##############################
 def classification_cart(validation_data):
@@ -82,9 +99,9 @@ def fuzzy(validation_data):
   # variáveis linguisticas de entrada e saída
   pSist_range = np.arange(5,22.0,0.1) #pressão sistólica [5,22]
   pDiast_range = np.arange(0,15.0,0.1) #pressão diastólica [5,22]
-  qPA_range = np.arange(-10,10.0,0.1) #qualidade de pressão [5,22]
-  pulso_range = np.arange(0,200.0,0.1) #pulsação [5,22]
-  resp_range = np.arange(0,22.0,0.1) #freq. respiratória [5,22]
+  qPA_range = np.arange(-10,10.0,1) #qualidade de pressão [5,22]
+  pulso_range = np.arange(0,200.0,1) #pulsação [5,22]
+  resp_range = np.arange(0,22.0,1) #freq. respiratória [5,22]
   #pSist = ctrl.Antecedent(pSist_range, 'pSist')
   #pDiast = ctrl.Antecedent(pDiast_range, 'pDiast')
   qPA = ctrl.Antecedent(qPA_range, 'qPA')
@@ -95,103 +112,103 @@ def fuzzy(validation_data):
   # Metodo de desfuzificação
   # 'centroid', 'mom' (mean of maximum), 'bisector'(2 areas iguais a partir do ponto de max), 'som'(smallest of maximum),
   classe_range = np.arange(0, 100, 1)
-  classe = ctrl.Consequent(classe_range, 'classe', defuzzify_method='mom')
+  classe = ctrl.Consequent(classe_range, 'classe', defuzzify_method='centroid')
 
   # termos linguísticos para a qualidade de pressão
-  qPA['BAI'] = fuzz.trimf(qPA.universe, [-10, -5, -1])
-  qPA['MED'] = fuzz.trimf(qPA.universe, [-3, 0, 3])
-  qPA['ALT'] = fuzz.trimf(qPA.universe, [1, 5, 10])
+  qPA['BAI'] = fuzz.trapmf(qPA.universe, [-10, -10, -5, -2])
+  qPA['MED'] = fuzz.trimf(qPA.universe, [-4, 0, 4])
+  qPA['ALT'] = fuzz.trapmf(qPA.universe, [2, 5, 10, 10])
   #qPA.view()
 
   # termos linguísticos para a pulsação
-  pulso['BAI'] = fuzz.trimf(pulso.universe, [0, 50, 80])
+  pulso['BAI'] = fuzz.trapmf(pulso.universe, [0, 0, 50, 70])
   pulso['MED'] = fuzz.trimf(pulso.universe, [60, 85, 110])
-  pulso['ALT'] = fuzz.trimf(pulso.universe, [100, 150, 200])
+  pulso['ALT'] = fuzz.trapmf(pulso.universe, [100, 150, 200, 200])
   #pulso.view()
 
   # termos linguísticos para a respiração
   resp['BAI'] = fuzz.trimf(resp.universe, [0, 5.5, 13])
   resp['MED'] = fuzz.trimf(resp.universe, [10, 12, 16.5])
-  resp['ALT'] = fuzz.trimf(resp.universe, [14, 16.5, 22])
+  resp['ALT'] = fuzz.trimf(resp.universe, [14, 18, 22])
   # resp.view()
 
   # termos linguísticos para a classe gravidade
-  classe['CRIT'] = fuzz.trimf(classe.universe, [0, 20, 30])
-  classe['INST'] = fuzz.trimf(classe.universe, [25, 40, 55])
-  classe['P_EST'] = fuzz.trimf(classe.universe, [50, 60, 80])
-  classe['EST'] = fuzz.trimf(classe.universe, [75, 80, 100])
+  classe['CRIT'] = fuzz.trapmf(classe.universe, [0, 0, 20, 25])
+  classe['INST'] = fuzz.trimf(classe.universe, [20, 40, 55])
+  classe['P_EST'] = fuzz.trimf(classe.universe, [45, 60, 80])
+  classe['EST'] = fuzz.trapmf(classe.universe, [75, 90, 100, 100])
   #classe.view()
   #print(f"{classe.terms.keys()} tam = {len(classe.terms.keys())}")
 
 
   # regras
   regras = [ ]
-  regras.append(ctrl.Rule(qPA['BAI'] & pulso['BAI'] & resp['BAI'], classe['INST'])) 
-  regras.append(ctrl.Rule(qPA['MED'] & pulso['BAI'] & resp['BAI'], classe['P_EST'])) 
-  regras.append(ctrl.Rule(qPA['ALT'] & pulso['BAI'] & resp['BAI'], classe['INST'])) 
+  regras.append(ctrl.Rule(qPA['BAI'] & pulso['BAI'] & resp['BAI'], classe['CRIT']))  #1
+  regras.append(ctrl.Rule(qPA['MED'] & pulso['BAI'] & resp['BAI'], classe['INST']))  #2
+  regras.append(ctrl.Rule(qPA['ALT'] & pulso['BAI'] & resp['BAI'], classe['CRIT']))  #3
 
-  regras.append(ctrl.Rule(qPA['BAI'] & pulso['MED'] & resp['BAI'], classe['INST'])) 
-  regras.append(ctrl.Rule(qPA['MED'] & pulso['MED'] & resp['BAI'], classe['P_EST'])) 
-  regras.append(ctrl.Rule(qPA['ALT'] & pulso['MED'] & resp['BAI'], classe['INST'])) 
+  regras.append(ctrl.Rule(qPA['BAI'] & pulso['MED'] & resp['BAI'], classe['INST'])) #4
+  regras.append(ctrl.Rule(qPA['MED'] & pulso['MED'] & resp['BAI'], classe['P_EST']))  #5 
+  regras.append(ctrl.Rule(qPA['ALT'] & pulso['MED'] & resp['BAI'], classe['INST'])) #6
 
-  regras.append(ctrl.Rule(qPA['BAI'] & pulso['ALT'] & resp['BAI'], classe['INST'])) 
-  regras.append(ctrl.Rule(qPA['MED'] & pulso['ALT'] & resp['BAI'], classe['INST'])) 
-  regras.append(ctrl.Rule(qPA['ALT'] & pulso['ALT'] & resp['BAI'], classe['CRIT'])) 
+  regras.append(ctrl.Rule(qPA['BAI'] & pulso['ALT'] & resp['BAI'], classe['CRIT']))#7
+  regras.append(ctrl.Rule(qPA['MED'] & pulso['ALT'] & resp['BAI'], classe['INST'])) #8
+  regras.append(ctrl.Rule(qPA['ALT'] & pulso['ALT'] & resp['BAI'], classe['CRIT'])) #9
   
-  regras.append(ctrl.Rule(qPA['BAI'] & pulso['BAI'] & resp['MED'], classe['INST'])) 
-  regras.append(ctrl.Rule(qPA['MED'] & pulso['BAI'] & resp['MED'], classe['P_EST'])) 
-  regras.append(ctrl.Rule(qPA['ALT'] & pulso['BAI'] & resp['MED'], classe['INST'])) 
+  regras.append(ctrl.Rule(qPA['BAI'] & pulso['BAI'] & resp['MED'], classe['INST'])) #10
+  regras.append(ctrl.Rule(qPA['MED'] & pulso['BAI'] & resp['MED'], classe['INST'])) #11
+  regras.append(ctrl.Rule(qPA['ALT'] & pulso['BAI'] & resp['MED'], classe['INST'])) #12
 
-  regras.append(ctrl.Rule(qPA['BAI'] & pulso['MED'] & resp['MED'], classe['P_EST'])) 
-  regras.append(ctrl.Rule(qPA['MED'] & pulso['MED'] & resp['MED'], classe['EST'])) 
-  regras.append(ctrl.Rule(qPA['ALT'] & pulso['MED'] & resp['MED'], classe['INST'])) 
+  regras.append(ctrl.Rule(qPA['BAI'] & pulso['MED'] & resp['MED'], classe['P_EST'])) #13
+  regras.append(ctrl.Rule(qPA['MED'] & pulso['MED'] & resp['MED'], classe['EST'])) #14
+  regras.append(ctrl.Rule(qPA['ALT'] & pulso['MED'] & resp['MED'], classe['P_EST'])) #15
 
-  regras.append(ctrl.Rule(qPA['BAI'] & pulso['ALT'] & resp['MED'], classe['INST'])) 
-  regras.append(ctrl.Rule(qPA['MED'] & pulso['ALT'] & resp['MED'], classe['INST']))
-  regras.append(ctrl.Rule(qPA['ALT'] & pulso['ALT'] & resp['MED'], classe['INST'])) 
+  regras.append(ctrl.Rule(qPA['BAI'] & pulso['ALT'] & resp['MED'], classe['P_EST'])) #16
+  regras.append(ctrl.Rule(qPA['MED'] & pulso['ALT'] & resp['MED'], classe['INST']))#17
+  regras.append(ctrl.Rule(qPA['ALT'] & pulso['ALT'] & resp['MED'], classe['INST'])) #18
 
-  regras.append(ctrl.Rule(qPA['BAI'] & pulso['BAI'] & resp['ALT'], classe['P_EST'])) 
-  regras.append(ctrl.Rule(qPA['MED'] & pulso['BAI'] & resp['ALT'], classe['P_EST'])) 
-  regras.append(ctrl.Rule(qPA['ALT'] & pulso['BAI'] & resp['ALT'], classe['P_EST'])) 
+  regras.append(ctrl.Rule(qPA['BAI'] & pulso['BAI'] & resp['ALT'], classe['INST'])) #19
+  regras.append(ctrl.Rule(qPA['MED'] & pulso['BAI'] & resp['ALT'], classe['P_EST']))  #20
+  regras.append(ctrl.Rule(qPA['ALT'] & pulso['BAI'] & resp['ALT'], classe['INST']))  #21
 
-  regras.append(ctrl.Rule(qPA['BAI'] & pulso['MED'] & resp['ALT'], classe['P_EST'])) 
-  regras.append(ctrl.Rule(qPA['MED'] & pulso['MED'] & resp['ALT'], classe['EST'])) 
-  regras.append(ctrl.Rule(qPA['ALT'] & pulso['MED'] & resp['ALT'], classe['P_EST'])) 
+  regras.append(ctrl.Rule(qPA['BAI'] & pulso['MED'] & resp['ALT'], classe['P_EST'])) #22
+  regras.append(ctrl.Rule(qPA['MED'] & pulso['MED'] & resp['ALT'], classe['EST']))  #23
+  regras.append(ctrl.Rule(qPA['ALT'] & pulso['MED'] & resp['ALT'], classe['P_EST']))  #24
 
-  regras.append(ctrl.Rule(qPA['BAI'] & pulso['ALT'] & resp['ALT'], classe['P_EST'])) 
-  regras.append(ctrl.Rule(qPA['MED'] & pulso['ALT'] & resp['ALT'], classe['P_EST'])) 
-  regras.append(ctrl.Rule(qPA['ALT'] & pulso['ALT'] & resp['ALT'], classe['INST'])) 
+  regras.append(ctrl.Rule(qPA['BAI'] & pulso['ALT'] & resp['ALT'], classe['INST'])) #25
+  regras.append(ctrl.Rule(qPA['MED'] & pulso['ALT'] & resp['ALT'], classe['P_EST'])) #26
+  regras.append(ctrl.Rule(qPA['ALT'] & pulso['ALT'] & resp['ALT'], classe['INST'])) #27
   """
   Vamos criar uma representação alternativa das regras para calcularmos os valores de disparo de cada regra, já que o sckfuzzy não deixa acessar diretamente.
   Cada linha representa uma regra. Cada regra faz referência a um termo linguístico. A última coluna diz se é um AND (1) ou um OR (2). 
   """
-  regras_alt = [[0,0,0,1,1],
-                [1,0,0,2,1],
-                [2,0,0,1,1],
-                [0,1,0,1,1],
-                [1,1,0,2,1],
-                [2,1,0,1,1], 
-                [0,2,0,1,1],
-                [1,2,0,1,1],
-                [2,2,0,0,1],
-                [0,0,1,1,1],
-                [1,0,1,2,1],
-                [2,0,1,1,1],
-                [0,1,1,2,1],
-                [1,1,1,3,1],
-                [2,1,1,1,1], 
-                [0,2,1,1,1],
-                [1,2,1,1,1],
-                [2,2,2,1,1],
-                [0,0,2,2,1],
-                [1,0,2,2,1],
-                [2,0,2,2,1],
-                [0,1,2,2,1],
-                [1,1,2,3,1],
-                [2,1,2,2,1],
-                [0,2,2,2,1],
-                [1,2,2,2,1],
-                [2,2,2,1,1]]
+  regras_alt = [[0,0,0,0,1], #1
+                [1,0,0,1,1], #2
+                [2,0,0,0,1], #3
+                [0,1,0,1,1], #4
+                [1,1,0,2,1], #5
+                [2,1,0,1,1],  #6
+                [0,2,0,0,1],#7
+                [1,2,0,1,1], #8
+                [2,2,0,0,1], #9
+                [0,0,1,1,1], #10
+                [1,0,1,1,1], #11
+                [2,0,1,1,1], #12
+                [0,1,1,2,1], #13
+                [1,1,1,3,1], #14
+                [2,1,1,2,1], #15 
+                [0,2,1,2,1], #16
+                [1,2,1,1,1], #17
+                [2,2,2,1,1], #18
+                [0,0,2,1,1], #19
+                [1,0,2,2,1], #20
+                [2,0,2,1,1], #21
+                [0,1,2,2,1], #22
+                [1,1,2,3,1], #23
+                [2,1,2,2,1], #24
+                [0,2,2,1,1], #25
+                [1,2,2,2,1], #26
+                [2,2,2,1,1]] #27
 
   # # Sistema de fuzzy
   sif_ctrl = ctrl.ControlSystem(regras)
@@ -310,8 +327,8 @@ def dict2df(victims_dict):
         df_victims['posX']=df_victims['posX'].astype(int)
         df_victims['posY']=df_victims['posY'].astype(int)
         
-    #df_victims = classification_cart(df_victims) #manda dataframe para funcao que vai realizar a classificao por arvore de ddecisao
-    df_victims = fuzzy(df_victims) #manda dataframe para funcao que vai realizar a classificao por fuzzy
+    df_victims = classification_cart(df_victims) #manda dataframe para funcao que vai realizar a classificao por arvore de ddecisao
+    #df_victims = fuzzy(df_victims) #manda dataframe para funcao que vai realizar a classificao por fuzzy
     resultado_csv = pd.DataFrame(columns=['ID', 'x', 'y', 'grav', 'classe']) #cria dataframe para gravarr resultados
     resultado_csv['ID'] = df_victims['ID']
     resultado_csv['x'] = df_victims['posX']
@@ -339,11 +356,11 @@ def dict2df(victims_dict):
 #############################################################################################################################
 
 ########################################################PARA REALIZAR O TESTE, BASTA COLOCAR O CAMINHO DO ARQUIVO####################
-data = pd.read_csv("datasets\data_800v\env_vital_signals.txt",  header=None) # ler dados
+data = pd.read_csv("datasets\\data_800v\\env_vital_signals.txt",  header=None) # ler dados
 data.columns = ['ID', 'pSist', 'pDiast', 'qPA', 'pulso', 'resp', 'grav', 'classe'] #atribui as colunas ao DF
-#train_data_cart() #funcao treinamento do modelo
-resultado = fuzzy(data)
-#resultado = classification_cart(data) #realiza a classificacao com base nos dados por CART
+# train_data_cart() #funcao treinamento do modelo
+# #resultado = fuzzy(data)
+resultado = classification_cart(data) #realiza a classificacao com base nos dados por CART
 resultado_csv = pd.DataFrame(columns=['ID', 'x', 'y', 'grav', 'classe'])
 resultado_csv['ID'] = resultado['ID']
 resultado_csv['classe'] = resultado['classe']

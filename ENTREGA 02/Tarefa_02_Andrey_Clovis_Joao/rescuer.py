@@ -10,14 +10,18 @@ import random
 import plotly.express as px
 import numpy as np
 import pandas as pd
+
 import classificadores as cls
+import clustering as clus
+import genetic_search as ag
 from map import Map
 from vs.abstract_agent import AbstAgent
 from vs.physical_agent import PhysAgent
 from vs.constants import VS
 from abc import ABC, abstractmethod
 from sklearn.metrics import silhouette_score
-
+from vs.environment import Env
+from collections import Counter
 
 ## Classe que define o Agente Rescuer com um plano fixo
 
@@ -30,9 +34,11 @@ class Rescuer(AbstAgent):
         super().__init__(env, config_file)
 
         # Specific initialization for the rescuer
+        self.nb_of_explorers = 4    # number of explorers
+        self.received_maps = 0                       # counts the number of explorers' maps
         self.category = 'rescuer'
-        self.map = None             # explorer will pass the map
-        self.victims = None         # list of found victims
+        self.map = Map()            # explorer will pass the map
+        self.victims = {}        # list of found victims
         self.plan = []              # a list of planned actions
         self.plan_x = 0             # the x position of the rescuer during the planning phase
         self.plan_y = 0             # the y position of the rescuer during the planning phase
@@ -47,7 +53,7 @@ class Rescuer(AbstAgent):
         # It changes to ACTIVE when the map arrives
         self.set_state(VS.IDLE)
 
-    def plan_and_rescue(self, rescuer_agents, map, victims):
+    def cluster_and_plan(self, rescuer_agents, map, victims):
         """Separates the victims into clusters and indicates one cluster to each rescuer"""
 
         labels = self.victims_clustering(victims) # Clustering
@@ -69,9 +75,9 @@ class Rescuer(AbstAgent):
                 rescuer_4_victims.update({key: value})
             index += 1
         victims_per_cluster = [rescuer_1_victims, rescuer_2_victims, rescuer_3_victims, rescuer_4_victims]
-        victims_per_cluster_grav = cls.dict2df(victims_per_cluster) #funcaoq ue realiza a classificacao e iserção da gravidade no dict das vitimas
-        for agent, victims_per_agent in zip(rescuer_agents, victims_per_cluster_grav):
-            agent.mind.go_save_victims(map, victims_per_agent)
+        victims_per_cluster = cls.dict2df(victims_per_cluster) #funcaoque realiza a classificacao e iserção da gravidade no dict das vitimas
+        for agent, victims_per_agent in zip(rescuer_agents, victims_per_cluster):
+            agent.go_save_victims(map, victims_per_agent)
 
         #exit() # Fim do projeto 1
 
@@ -83,147 +89,37 @@ class Rescuer(AbstAgent):
         print(f"\n\n*** {self.NAME} ***")
         self.map = map
         print(f"{self.NAME} Map received from the explorer")
-        self.map.draw()
+        #self.map.draw()
 
         print()
         print(f"{self.NAME} List of found victims received from the explorer")
         self.victims = victims
 
         # print the found victims - you may comment out
-        # for seq, data in self.victims.items():
-        #    coord, vital_signals = data
-        #    x, y = coord
-        #    grav = vital_signals[6]
-        #    print(f"{self.NAME} Victim seq number: {seq} at ({x}, {y}) vs: {vital_signals}, gravidade: {grav}")
+        #for seq, data in self.victims.items():
+            #coord, vital_signals = data
+            #x, y = coord
+            #grav = vital_signals[6]
+            #print(f"{self.NAME} Victim seq number: {seq} at ({x}, {y}) vs: {vital_signals}, gravidade: {grav}")
 
         #print(f"{self.NAME} time limit to rescue {self.plan_rtime}")
 
-        self.__planner(map, victims)
+        self.plan = ag.planner_genetic_algorithm(map, victims, self.TLIM)
+
         print(f"{self.NAME} PLAN")
-        i = 1
+
+        i=1
         self.plan_x = 0
         self.plan_y = 0
         for a in self.plan:
             self.plan_x += a[0]
             self.plan_y += a[1]
-            print(f"{self.NAME} {i}) dxy=({a[0]}, {a[1]}) vic: a[2] => at({self.plan_x}, {self.plan_y})")
+            print(f"{self.NAME} {i}) dxy=({a[0]}, {a[1]}) vic: a[2] => at({self.plan_x}, {self.plan_y}, {a[2]})")
             i += 1
 
         print(f"{self.NAME} END OF PLAN")
                   
         self.set_state(VS.ACTIVE)
-        
-    def __depth_search(self, actions_res):
-        enough_time = True
-
-        if self.NAME == "RESCUER1PINK":
-            direction_stack = [7, 0, 1, 2, 3, 4, 5, 6]
-        elif self.NAME == "RESCUER2CYAN":
-            direction_stack = [5, 4, 3, 2, 1, 0, 7, 6]
-        elif self.NAME == "RESCUER3YELLOW":
-            direction_stack = [3, 4, 5, 6, 7, 0, 1, 2]
-        else:
-            direction_stack = [1, 0, 7, 6, 5, 4 ,3, 2]
-
-        #print(f"\n{self.NAME} actions results: {actions_res}")
-        for i, ar in enumerate(actions_res):
-
-            if ar != VS.CLEAR:
-                ##print(f"{self.NAME} {i} not clear")
-                continue
-
-            # planning the walk
-            dx, dy = Rescuer.AC_INCR[direction_stack[i]]  # get the increments for the possible action
-            target_xy = (self.plan_x + dx, self.plan_y + dy)
-
-            # checks if the explorer has not visited the target position
-            if not self.map.in_map(target_xy):
-                ##print(f"{self.NAME} target position not explored: {target_xy}")
-                continue
-
-            # checks if the target position is already planned to be visited 
-            if (target_xy in self.plan_visited):
-                ##print(f"{self.NAME} target position already visited: {target_xy}")
-                continue
-
-            # Now, the rescuer can plan to walk to the target position
-            self.plan_x += dx
-            self.plan_y += dy
-            difficulty, vic_seq, next_actions_res = self.map.get((self.plan_x, self.plan_y))
-            #print(f"{self.NAME}: planning to go to ({self.plan_x}, {self.plan_y})")
-
-            if dx == 0 or dy == 0:
-                step_cost = self.COST_LINE * difficulty
-            else:
-                step_cost = self.COST_DIAG * difficulty
-
-            #print(f"{self.NAME}: difficulty {difficulty}, step cost {step_cost}")
-            #print(f"{self.NAME}: accumulated walk time {self.plan_walk_time}, rtime {self.plan_rtime}")
-
-            # check if there is enough remaining time to walk back to the base
-            if self.plan_walk_time + step_cost > self.plan_rtime:
-                enough_time = False
-                #print(f"{self.NAME}: no enough time to go to ({self.plan_x}, {self.plan_y})")
-            
-            if enough_time:
-                # the rescuer has time to go to the next position: update walk time and remaining time
-                self.plan_walk_time += step_cost
-                self.plan_rtime -= step_cost
-                self.plan_visited.add((self.plan_x, self.plan_y))
-
-                if vic_seq == VS.NO_VICTIM:
-                    self.plan.append((dx, dy, False)) # walk only
-                    #print(f"{self.NAME}: added to the plan, walk to ({self.plan_x}, {self.plan_y}, False)")
-
-                if vic_seq != VS.NO_VICTIM:
-                    # checks if there is enough remaining time to rescue the victim and come back to the base
-                    if self.plan_rtime - self.COST_FIRST_AID < self.plan_walk_time:
-                        print(f"{self.NAME}: no enough time to rescue the victim")
-                        enough_time = False
-                    else:
-                        self.plan.append((dx, dy, True))
-                        #print(f"{self.NAME}:added to the plan, walk to and rescue victim({self.plan_x}, {self.plan_y}, True)")
-                        self.plan_rtime -= self.COST_FIRST_AID
-
-            # let's see what the agent can do in the next position
-            if enough_time:
-                self.__depth_search(self.map.get((self.plan_x, self.plan_y))[2]) # actions results
-            else:
-                return
-
-        return
-    
-    def __planner(self,map, victims):
-        """ A private method that calculates the walk actions in a OFF-LINE MANNER to rescue the
-        victims. Further actions may be necessary and should be added in the
-        deliberata method"""
-
-        """ This plan starts at origin (0,0) and chooses the first of the possible actions in a clockwise manner starting at 12h.
-        Then, if the next position was visited by the explorer, the rescuer goes to there. Otherwise, it picks the following possible action.
-        For each planned action, the agent calculates the time will be consumed. When time to come back to the base arrives,
-        it reverses the plan."""
-
-        # This is a off-line trajectory plan, each element of the list is a pair dx, dy that do the agent walk in the x-axis and/or y-axis.
-        # Besides, it has a flag indicating that a first-aid kit must be delivered when the move is completed.
-        # For instance (0,1,True) means the agent walk to (x+0,y+1) and after walking, it leaves the kit.
-
-        self.plan_visited.add((0,0)) # always start from the base, so it is already visited
-        difficulty, vic_seq, actions_res = self.map.get((0,0))
-        print(actions_res)
-        self.planner_astar(map, victims)
-        self.__depth_search(actions_res)
-
-        # push actions into the plan to come back to the base
-        if self.plan == []:
-            return
-
-        come_back_plan = []
-
-        for a in reversed(self.plan):
-            # triple: dx, dy, no victim - when coming back do not rescue any victim
-            come_back_plan.append((a[0]*-1, a[1]*-1, False))
-
-        self.plan = self.plan + come_back_plan
         
         
     def deliberate(self) -> bool:
@@ -265,31 +161,65 @@ class Rescuer(AbstAgent):
         return True
 
     def victims_clustering(self, victims):
-        """Executes a K-Means algorithm 100 times to find the best clustering
+        """Executes a K-Means algorithm 200 times to find the best clustering
         @:param victims: the unified victims dictionary"""
         victims_features = []
 
         for victim in victims.values():
             victims_features.append([0, np.array(list(victim[0]))]) # considera somente as
                                                                     # coordenadas x  y para o clustering
-
+        # K FIXO EM 4
         min_inertia = np.inf
-        final_clustering = []
-        for iteration in range(300):
-            inertia, clustering = self.k_means_clustering(victims_features)
+        best_clustering = []
+        for iteration in range(200):
+            try:
+                inertia, clustering = clus.k_means_clustering(victims_features)
+            except:
+                pass
             if inertia < min_inertia:
                 min_inertia = inertia
-                final_clustering = clustering
+                best_clustering = clustering
+
+        labels = [i[0] for i in best_clustering]
+        x = [i[1][0] for i in best_clustering]
+        y = [i[1][1] for i in best_clustering]
+        coordinates = np.array(list(zip(x, y)))
+
+        silhouette = silhouette_score(coordinates, labels)
 
         print(f'K-means clustering result')
         print(f'Inertia: {min_inertia}')
+        print(f'Silhouette score: {silhouette}')
 
-        labels = [i[0] for i in final_clustering]
-        x = [i[1][0] for i in final_clustering]
-        y = [i[1][1] for i in final_clustering]
-        coordinates = np.array(list(zip(x, y)))
+        # K VARIÁVEL
+        """best_silhouette = 0
 
-        print(f'Silhouette score: {silhouette_score(coordinates, labels)}')
+        for k in range(3, 8):
+            min_inertia = np.inf
+            best_clustering = []
+            for iteration in range(200):
+                try:
+                    inertia, clustering = self.k_means_clustering(victims_features, k=4)
+                except:
+                    inertia = np.inf
+                if inertia < min_inertia:
+                    min_inertia = inertia
+                    best_clustering = clustering
+
+            labels = [i[0] for i in best_clustering]
+            x = [i[1][0] for i in best_clustering]
+            y = [i[1][1] for i in best_clustering]
+            coordinates = np.array(list(zip(x, y)))
+
+            silhouette_ = silhouette_score(coordinates, labels)
+
+            if silhouette_ > best_silhouette:
+                final_labels = [i[0] for i in best_clustering]
+                final_x = [i[1][0] for i in best_clustering]
+                final_y = [i[1][1] for i in best_clustering]
+                final_inertia = min_inertia
+                final_k = k
+                best_silhouette = silhouette_"""
 
         scatter = px.scatter(x=x, y=y, color=[str(i) for i in labels], color_discrete_sequence=px.colors.qualitative.D3)
         scatter.update_layout(xaxis=dict(zeroline=False, showticklabels=False,
@@ -300,71 +230,41 @@ class Rescuer(AbstAgent):
                               margin=dict(l=0, r=0, t=0, b=0))
         scatter.update_yaxes(autorange='reversed')
         scatter.update_traces(showlegend=False)
-        scatter.write_image('./manual_k_means_clustering.png', format='png', width=500, height=500)
+        scatter.write_image('./k_means_clustering.png', format='png', width=500, height=500)
 
         return np.array(labels)
 
-    @staticmethod
-    def k_means_clustering(victims_features):
-        """K-Means algorithm
-        @:param victims_features: list of labels and features by victim"""
-        k = 4
-
-        #Definição dos centroides iniciais
-        indexes = np.random.choice(list(range(0, len(victims_features))), k, replace=False)
-        centroids = np.array([victims_features[i][1] for i in indexes])
-
-        iteration = 0
-        while True:
-            iteration += 1
-            stop = True
-
-            #'Rotulagem dos dados'
-            victim_number = 0
-            distances_to_centroids = []
-            for victim_data in victims_features:
-                distance_per_victim = []
-                for centroid in centroids:
-                    distance_per_victim.append(np.linalg.norm(victim_data[1]-centroid))
-                distance_per_victim = np.array(distance_per_victim)
-                cluster = np.argmin(distance_per_victim)
-                distances_to_centroids.append(distance_per_victim)
-                if cluster != victims_features[victim_number][0]:
-                    victims_features[victim_number][0] = cluster
-                    stop = False
-                victim_number += 1
-
-            #'Cálculo dos novos centroides'
-            for cluster in range(0, k):
-                victims_in_cluster = list(filter(lambda x: x[0] == cluster, victims_features))
-                victims_in_cluster = [i[1] for i in victims_in_cluster]
-                centroids[cluster] = np.mean(victims_in_cluster, axis=0)
-
-            if stop and iteration > 1:
-                break
-
-        # Cálculo da inércia
-        mins = np.min(distances_to_centroids, axis=1)
-        inertia = np.sum(np.square(mins))
-        return inertia, victims_features
-
-
-    def planner_astar(self,map,victims):
-        prioridades = np.zeros((len(victims.items()),2)) #cria matriz para prioridades
-        j = 0
-        for key, value in victims.items():
-            id_victim = key
-            classe_grav = value[1][6]
-            prioridades[j] = [id_victim,classe_grav] #insere ID (col1) e gravidade(col2) da vitima na matriz
-            j+=1
-        order = np.abs(prioridades[:,1]).argsort() #ordena matriz da maior gravidade para a menos
-        prioridades = prioridades[order[::-1]]
-        # for i in range(0,len(prioridades)):
-        #     for key, value in victims.items():
-        #         if key == prioridades[i,0]:
-        #             # print("OBJETIVO ATUAL")
-        #             # print("x: ", value[0][0])
-        #             # print("y: ", value[0][1])
-
             
+    
+    def sync_explorers(self, explorer_map, victims):
+        """ This method should be invoked only to the master agent
+
+        Each explorer sends the map containing the obstacles and
+        victims' location. The master rescuer updates its map with the
+        received one. It does the same for the victims' vital signals.
+        After, it should classify each severity of each victim (critical, ..., stable);
+        Following, using some clustering method, it should group the victims and
+        and pass one (or more)clusters to each rescuer """
+        self.map.map_data.update(explorer_map)
+        self.victims.update(victims)
         
+        self.received_maps += 1
+        if self.received_maps == self.nb_of_explorers:
+            rescuers = [None] * 4
+            rescuers[0] = self                    # the master rescuer is the index 0 agent
+            for i in range (1,4):
+                data_folder_name = os.path.join("datasets", "data_300v_90x90")
+                current_folder = os.path.abspath(os.getcwd())
+                data_folder = os.path.abspath(os.path.join(current_folder, data_folder_name))
+                filename = f"rescuer_config_{i+1:1d}.txt"
+                config_file = os.path.join(data_folder, filename)
+                env = Env(data_folder)
+                rescuers[i] = Rescuer(self.get_env(), config_file) 
+                rescuers[i].map = self.map     # each rescuer have the map
+            self.cluster_and_plan(rescuers, self.map, self.victims)
+            # rescuers[0].set_state(VS.ACTIVE)
+            # rescuers[1].set_state(VS.ACTIVE)
+            # rescuers[2].set_state(VS.ACTIVE)
+            # rescuers[3].set_state(VS.ACTIVE)
+            # print("")
+            

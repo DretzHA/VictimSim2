@@ -56,7 +56,7 @@ def return_path(current_node):
     return path
 
 
-def astar(maze, start, end, cost_line, cost_diag, allow_diagonal_movement = True):
+def astar(maze, start, end, cost_line, cost_diag, allow_diagonal_movement = True, rescue=False):
     """
     Returns a list of tuples as a path from the given start to the given end in the given maze
     :param maze:
@@ -81,8 +81,11 @@ def astar(maze, start, end, cost_line, cost_diag, allow_diagonal_movement = True
 
     # Adding a stop condition
     outer_iterations = 0
-    # max_iterations = (len(maze[0]) * len(maze) // 2)
-    max_iterations = 1000
+    if rescue:
+        max_iterations = 50000
+    else:
+        max_iterations = 1000
+
     # what squares do we search
     adjacent_squares = ((0, -1), (0, 1), (-1, 0), (1, 0),)
     if allow_diagonal_movement:
@@ -98,7 +101,7 @@ def astar(maze, start, end, cost_line, cost_diag, allow_diagonal_movement = True
           warn("giving up on pathfinding too many iterations")
           print("Não realizado A*")
 
-          return return_path(current_node)       
+          return return_path(current_node), current_node.position
         
         # Get the current node
         current_node = heapq.heappop(open_list)
@@ -106,7 +109,7 @@ def astar(maze, start, end, cost_line, cost_diag, allow_diagonal_movement = True
 
         # Found the goal
         if current_node == end_node:
-            return return_path(current_node)
+            return return_path(current_node), None
 
         # Generate children
         children = []
@@ -156,14 +159,18 @@ def astar(maze, start, end, cost_line, cost_diag, allow_diagonal_movement = True
             heapq.heappush(open_list, child)
 
     warn("Couldn't get a path to destination")
-    return None
-   
-def solve_comeback(actual_x, actual_y, adj_map, base_x, base_y, cost_line, cost_diag):
+    return None, None
+
+
+def solve_comeback(actual_x, actual_y, adj_map, base_x, base_y, cost_line, cost_diag, rescue=False):
         '''revolve retorno e tempo de retorno do agente para base'''
         start = (actual_x,actual_y)    #posição atual de inicio
         end = (base_x,base_y) #posição final (base)
-        path = astar(adj_map,start,end, cost_line, cost_diag) #função que retorna caminho
+        path, last_node = astar(adj_map,start,end, cost_line, cost_diag, rescue=rescue) #função que retorna caminho
+
+
         #calculo do tempo
+
         time_to_base = 0                                      
         for i in range(0,len(path.items)-1):                  #veriica se caminho é reto ou diagonal e passa custo
           dif_x = abs(path.items[i][0]-path.items[i+1][0])  
@@ -171,7 +178,14 @@ def solve_comeback(actual_x, actual_y, adj_map, base_x, base_y, cost_line, cost_
           if (dif_x+dif_y) == 1:
             time_to_base = time_to_base+cost_line*adj_map[path.items[i+1][1]][path.items[i+1][0]]
           else:
-            time_to_base = time_to_base+cost_diag*adj_map[path.items[i+1][1]][path.items[i+1][0]]   
+            time_to_base = time_to_base+cost_diag*adj_map[path.items[i+1][1]][path.items[i+1][0]]
+
+        # Adiciona a distância de manhatan ao percurso faltante caso o A* não seja finalizado
+        if last_node is not None and rescue:
+            time_to_base += 1.5*manhattan_distance(last_node, end)
 
         return path, time_to_base
-        
+
+
+def manhattan_distance(start, end):
+    return abs(start[0]-end[0]) + abs(start[1]-end[1])

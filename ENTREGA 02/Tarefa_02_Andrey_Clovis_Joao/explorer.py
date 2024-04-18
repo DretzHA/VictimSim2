@@ -56,11 +56,14 @@ class Explorer(AbstAgent):
         self.map.add((self.x, self.y), 1, VS.NO_VICTIM, self.check_walls_and_lim())
         self.tempo_apos_astar = self.TLIM #tempo inicial restante
         self.cicles = 0            #ciclos antes de entrar no metodo A*
+        self.received_maps = 0     
+        self.nb_of_explorers = 4
 
     def ag_dead(self):
         """Deletes the map and victims of a dead agent"""
         self.map = Map()
         self.victims = {}
+        self.sync_explorers(self.map, self.victims)
 
     def update_map(self, new_map):
         """Joins the maps from two different explorers
@@ -74,8 +77,9 @@ class Explorer(AbstAgent):
 
     def prepare_rescue(self, rescuer_agents):
         """Delievers the map and victims dictionary to the leader of rescuers"""
-        self.resc.plan_and_rescue(rescuer_agents, self.map, self.victims)
-
+        #self.resc.plan_and_rescue(rescuer_agents, self.map, self.victims)
+        self.resc.cluster_and_plan(rescuer_agents, self.map, self.victims)
+        
     def get_next_position(self):
         """Check the neighborhood walls and grid limits"""
         obstacles = self.check_walls_and_lim()
@@ -207,7 +211,9 @@ class Explorer(AbstAgent):
         if self.path.is_empty() or (self.x == 0 and self.y == 0):
             # time to come back to the base
             # time to wake up the rescuer
-            pass
+            self.resc.sync_explorers(self.map.map_data, self.victims) ##################INSERIDO
+            return False
+            #pass
         else:
             self.returning == 1
             self.come_back()
