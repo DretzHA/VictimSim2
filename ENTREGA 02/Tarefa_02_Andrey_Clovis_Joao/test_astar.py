@@ -82,9 +82,9 @@ def astar(maze, start, end, cost_line, cost_diag, allow_diagonal_movement = True
     # Adding a stop condition
     outer_iterations = 0
     if (rescue==True) & (nb_try == 0):
-        max_iterations = 1000
+        max_iterations = 500
     elif (rescue==True) & (nb_try == 1):
-        max_iterations = 10000
+        max_iterations = 3000
     else:
         max_iterations = 5000
 

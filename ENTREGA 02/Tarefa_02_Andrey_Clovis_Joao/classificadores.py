@@ -11,6 +11,7 @@ import skfuzzy as fuzz
 from skfuzzy import control as ctrl
 import pickle
 from sklearn.metrics import accuracy_score, confusion_matrix, ConfusionMatrixDisplay, classification_report
+import csv
 pd.set_option('future.no_silent_downcasting', True)
 
 
@@ -37,8 +38,14 @@ def train_data_cart():
   # grid search using cross-validation
   # cv = 3 is the number of folds
   # scoring = 'f' the metric for chosing the best model
-  clf = GridSearchCV(tree_classifier, parameters, cv=5, scoring='f1', verbose=4)
+  clf = GridSearchCV(tree_classifier, parameters, cv=5, verbose=4)
   clf.fit(X_train, y_train)
+  
+  results_clf = clf.cv_results_
+  print(results_clf)
+  with open('resultados_classificador.csv','w') as f:
+    w = csv.writer(f)
+    w.writerows(results_clf.items())
   # the best tree according to the f1 score
   best = clf.best_estimator_
   print("\n* Melhor classificador *")
@@ -358,8 +365,8 @@ def dict2df(victims_dict):
 ########################################################PARA REALIZAR O TESTE, BASTA COLOCAR O CAMINHO DO ARQUIVO####################
 data = pd.read_csv("datasets\\data_800v\\env_vital_signals.txt",  header=None) # ler dados
 data.columns = ['ID', 'pSist', 'pDiast', 'qPA', 'pulso', 'resp', 'grav', 'classe'] #atribui as colunas ao DF
-# train_data_cart() #funcao treinamento do modelo
-# #resultado = fuzzy(data)
+train_data_cart() #funcao treinamento do modelo
+#resultado = fuzzy(data)
 resultado = classification_cart(data) #realiza a classificacao com base nos dados por CART
 resultado_csv = pd.DataFrame(columns=['ID', 'x', 'y', 'grav', 'classe'])
 resultado_csv['ID'] = resultado['ID']
