@@ -85,16 +85,16 @@ class Explorer(AbstAgent):
         obstacles = self.check_walls_and_lim()
 
         if self.NAME == "EXPLORER1BLUE":
-            direction_stack = [ 0, 2, 4, 5, 3, 6, 1]
+            direction_stack = [ 0, 2, 4, 6, 1, 3, 5, 7]
             #direction_stack = [7, 0, 1, 2, 3, 4, 5, 6]
         elif self.NAME == "EXPLORER2GREEN":
-            direction_stack = [1, 2, 4, 5, 7, 6, 0, 3]
+            direction_stack = [0, 6, 4, 2, 7, 1, 3, 5]
             #direction_stack = [5, 4, 3, 2, 1, 0, 7, 6]
         elif self.NAME == "EXPLORER3PURPLE":
-            direction_stack = [3, 4, 6, 0, 1, 7, 2, 5]
+            direction_stack = [4, 2, 6, 0, 1, 3, 5, 7]
             #direction_stack = [3, 4, 5, 6, 7, 0, 1, 2]
         else:
-            direction_stack = [5, 6, 0, 1, 3, 2, 4, 7]
+            direction_stack = [6, 4, 2, 0, 7, 1, 3, 5]
             #direction_stack = [1, 0, 7, 6, 5, 4 ,3, 2]
 
         i = 0
@@ -190,7 +190,7 @@ class Explorer(AbstAgent):
         #uso de varivais globais para ver término, mapa e vitimas de cada agente
       
         if self.get_rtime()>700:
-            qtd_ciclos = 25
+            qtd_ciclos = 20
         elif self.get_rtime()>100:
             qtd_ciclos = 15
         elif self.get_rtime()>50:
@@ -198,7 +198,7 @@ class Explorer(AbstAgent):
         else:
             qtd_ciclos = 5
 
-        if (self.time_to_base * 3 < self.tempo_apos_astar) and (
+        if (self.time_to_base * 2 < self.tempo_apos_astar) and (
                 self.returning == 0):  # tempo de retornar é menor que tempo restante, continua a explorar
             if self.cicles == 0:
                 self.path, self.time_to_base = self.astar_method(self.map, self.x, self.y)

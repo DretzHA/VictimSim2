@@ -253,7 +253,7 @@ class Rescuer(AbstAgent):
             rescuers = [None] * 4
             rescuers[0] = self                    # the master rescuer is the index 0 agent
             for i in range (1,4):
-                data_folder_name = os.path.join("datasets", "data_300v_90x90")
+                data_folder_name = os.path.join("datasets", "data_42v_20x20")
                 current_folder = os.path.abspath(os.getcwd())
                 data_folder = os.path.abspath(os.path.join(current_folder, data_folder_name))
                 filename = f"rescuer_config_{i+1:1d}.txt"

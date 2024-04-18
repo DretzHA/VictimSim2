@@ -56,7 +56,7 @@ def return_path(current_node):
     return path
 
 
-def astar(maze, start, end, cost_line, cost_diag, allow_diagonal_movement = True, rescue=False):
+def astar(maze, start, end, cost_line, cost_diag, allow_diagonal_movement = True, rescue=False, nb_try = 0):
     """
     Returns a list of tuples as a path from the given start to the given end in the given maze
     :param maze:
@@ -81,10 +81,12 @@ def astar(maze, start, end, cost_line, cost_diag, allow_diagonal_movement = True
 
     # Adding a stop condition
     outer_iterations = 0
-    if rescue:
-        max_iterations = 50000
-    else:
+    if (rescue==True) & (nb_try == 0):
         max_iterations = 1000
+    elif (rescue==True) & (nb_try == 1):
+        max_iterations = 10000
+    else:
+        max_iterations = 5000
 
     # what squares do we search
     adjacent_squares = ((0, -1), (0, 1), (-1, 0), (1, 0),)
@@ -99,9 +101,13 @@ def astar(maze, start, end, cost_line, cost_diag, allow_diagonal_movement = True
           # if we hit this point return the path such as it is
           # it will not contain the destination
           warn("giving up on pathfinding too many iterations")
-          print("Não realizado A*")
-
-          return return_path(current_node), current_node.position
+          if rescue:
+            if nb_try ==0:
+                #print("Não realizado A*, nova tentatia somente com busca gulosa")
+                astar(maze, start, end, cost_line, cost_diag, allow_diagonal_movement = False, rescue=False, nb_try = 1)
+          else:  
+            print("Máximo iteraçoes alcançadas")
+            return return_path(current_node), current_node.position
         
         # Get the current node
         current_node = heapq.heappop(open_list)
@@ -147,7 +153,10 @@ def astar(maze, start, end, cost_line, cost_diag, allow_diagonal_movement = True
               mov_cost = cost_diag*maze[child.position[1]][child.position[0]]
             
             # Create the f, g, and h values
-            child.g = current_node.g + mov_cost
+            if nb_try==1:
+                child.g = 0
+            else:
+                child.g = current_node.g + mov_cost
             child.h = math.sqrt(((child.position[0] - end_node.position[0]) ** 2) + ((child.position[1] - end_node.position[1]) ** 2))
             child.f = child.g + child.h
 
@@ -166,7 +175,7 @@ def solve_comeback(actual_x, actual_y, adj_map, base_x, base_y, cost_line, cost_
         '''revolve retorno e tempo de retorno do agente para base'''
         start = (actual_x,actual_y)    #posição atual de inicio
         end = (base_x,base_y) #posição final (base)
-        path, last_node = astar(adj_map,start,end, cost_line, cost_diag, rescue=rescue) #função que retorna caminho
+        path, last_node = astar(adj_map,start,end, cost_line, cost_diag, rescue=rescue, nb_try=0) #função que retorna caminho
 
 
         #calculo do tempo
