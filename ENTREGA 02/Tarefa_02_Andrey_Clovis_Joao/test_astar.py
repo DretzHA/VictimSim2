@@ -64,7 +64,18 @@ def astar(maze, start, end, cost_line, cost_diag, allow_diagonal_movement = True
     :param end:
     :return:
     """
-
+    
+    
+    # '''teste para agilizar caluclo'''
+    # # if rescue:
+    # #     direcao_horizontal_obj =  end[0] - start[0]
+    # #     direcao_vertical_obj = end[1] - start[1]
+        
+    # #     distancia_inicial=math.sqrt(pow(direcao_horizontal_obj,2) + pow(direcao_vertical_obj,2))
+    # #     print("")
+    #     '''fim teste'''
+    
+    
     # Create start and end node
     start_node = Node(None, start)
     start_node.g = start_node.h = start_node.f = 0
@@ -81,12 +92,7 @@ def astar(maze, start, end, cost_line, cost_diag, allow_diagonal_movement = True
 
     # Adding a stop condition
     outer_iterations = 0
-    if (rescue==True) & (nb_try == 0):
-        max_iterations = 500
-    elif (rescue==True) & (nb_try == 1):
-        max_iterations = 3000
-    else:
-        max_iterations = 5000
+    max_iterations = 100000
 
     # what squares do we search
     adjacent_squares = ((0, -1), (0, 1), (-1, 0), (1, 0),)
@@ -104,7 +110,7 @@ def astar(maze, start, end, cost_line, cost_diag, allow_diagonal_movement = True
           if rescue:
             if nb_try ==0:
                 #print("Não realizado A*, nova tentatia somente com busca gulosa")
-                astar(maze, start, end, cost_line, cost_diag, allow_diagonal_movement = False, rescue=False, nb_try = 1)
+                astar(maze, start, end, cost_line, cost_diag, allow_diagonal_movement = True, rescue=True, nb_try = 1)
           else:  
             print("Máximo iteraçoes alcançadas")
             return return_path(current_node), current_node.position
@@ -132,7 +138,24 @@ def astar(maze, start, end, cost_line, cost_diag, allow_diagonal_movement = True
             # Make sure walkable terrain
             if maze[node_position[1]][node_position[0]] == 100.0:
                 continue
-
+        
+            
+            # '''teste para agilizar caluclo'''
+            # if rescue:
+            #     direcao_horizontal_node =  end[0] - node_position[0]
+            #     direcao_vertical_node = end[1] - node_position[1]
+                
+            #     distancia_node=math.sqrt(pow(direcao_horizontal_node,2) + pow(direcao_vertical_node,2))
+            #     if distancia_node>distancia_inicial:
+            #         print("")
+            #         continue
+            #     else:
+            #         distancia_inicial==distancia_node
+                    
+            #     '''fim teste'''
+          
+            
+            
             # Create new node
             new_node = Node(current_node, node_position)
 
@@ -153,16 +176,31 @@ def astar(maze, start, end, cost_line, cost_diag, allow_diagonal_movement = True
               mov_cost = cost_diag*maze[child.position[1]][child.position[0]]
             
             # Create the f, g, and h values
-            if nb_try==1:
-                child.g = 0
-            else:
-                child.g = current_node.g + mov_cost
+            child.g = current_node.g + mov_cost
             child.h = math.sqrt(((child.position[0] - end_node.position[0]) ** 2) + ((child.position[1] - end_node.position[1]) ** 2))
             child.f = child.g + child.h
 
+            # # Child is already in the open list
+            # if len([open_node for open_node in open_list if child.position == open_node.position and child.g > open_node.g]) > 0:
+            #     continue
+            
             # Child is already in the open list
-            if len([open_node for open_node in open_list if child.position == open_node.position and child.g > open_node.g]) > 0:
-                continue
+            index = None
+            for i in range(0, len(open_list)):
+                if child.position == open_list[i].position:
+                    index = i
+                    break
+            
+            if index:
+                if child.g >= open_list[index].g:
+                    continue
+                else:
+                    open_list[index] = open_list[-1]
+                    open_list.pop()
+                    if index < len(open_list):
+                        heapq._siftup(open_list, index)
+                        heapq._siftdown(open_list, 0, index)
+        
 
             # Add the child to the open list
             heapq.heappush(open_list, child)

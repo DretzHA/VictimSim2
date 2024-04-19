@@ -343,13 +343,13 @@ def dict2df(victims_dict):
     resultado_csv['classe'] = df_victims['classe']
     resultado_csv.fillna(0, inplace=True)
     if i ==0:
-      resultado_csv.to_csv("cluster1.txt", header=False, index=False) #salva resultados cluster1 (vitimas grupo 1)
+      resultado_csv.to_csv("clusters\\cluster1.txt", header=False, index=False) #salva resultados cluster1 (vitimas grupo 1)
     elif i ==1:
-      resultado_csv.to_csv("cluster2.txt", header=False, index=False) #salva resultados cluster2 (vitimas grupo 2)
+      resultado_csv.to_csv("clusters\\cluster2.txt", header=False, index=False) #salva resultados cluster2 (vitimas grupo 2)
     elif i ==2:
-      resultado_csv.to_csv("cluster3.txt", header=False, index=False) #salva resultados cluster3 (vitimas grupo 3)
+      resultado_csv.to_csv("clusters\\cluster3.txt", header=False, index=False) #salva resultados cluster3 (vitimas grupo 3)
     else:
-      resultado_csv.to_csv("cluster4.txt", header=False, index=False) #salva resultados cluster4 (vitimas grupo 4)
+      resultado_csv.to_csv("clusters\\cluster4.txt", header=False, index=False) #salva resultados cluster4 (vitimas grupo 4)
     i+=1
     
     j=0

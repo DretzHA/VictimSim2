@@ -162,13 +162,13 @@ class Rescuer(AbstAgent):
                         new_row = [key_vitima[0], self.x, self.y, 0, gravidade]
                         self.seq.loc[len(self.seq)] = new_row
                         if self.NAME == "RESCUER1PINK":
-                            self.seq.to_csv("seq1.txt", header=False, index=False) #salva resultados sequencia 1
+                            self.seq.to_csv("clusters\\seq1.txt", header=False, index=False) #salva resultados sequencia 1
                         elif self.NAME == "RESCUER2CYAN":
-                            self.seq.to_csv("seq2.txt", header=False, index=False) #salva resultados sequencia 2
+                            self.seq.to_csv("clusters\\seq2.txt", header=False, index=False) #salva resultados sequencia 2
                         elif self.NAME == "RESCUER3YELLOW":
-                            self.seq.to_csv("seq3.txt", header=False, index=False) #salva resultados sequencia 3
+                            self.seq.to_csv("clusters\\seq3.txt", header=False, index=False) #salva resultados sequencia 3
                         else:
-                            self.seq.to_csv("seq4.txt", header=False, index=False) #salva resultados sequencia 4
+                            self.seq.to_csv("clusters\\seq4.txt", header=False, index=False) #salva resultados sequencia 4
                     
                 else:
                     print(f"{self.NAME} Plan fail - victim not found at ({self.x}, {self.x})")
@@ -272,7 +272,7 @@ class Rescuer(AbstAgent):
             rescuers = [None] * 4
             rescuers[0] = self                    # the master rescuer is the index 0 agent
             for i in range (1,4):
-                data_folder_name = os.path.join("datasets", "data_42v_20x20")
+                data_folder_name = os.path.join("datasets", "data_300v_90x90")
                 current_folder = os.path.abspath(os.getcwd())
                 data_folder = os.path.abspath(os.path.join(current_folder, data_folder_name))
                 filename = f"rescuer_config_{i+1:1d}.txt"

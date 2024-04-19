@@ -220,10 +220,10 @@ def calculate_cost(sequence, map, victims_list, tlim):
 def detail_rescue_plan(victims_coordinates, map, TLIM):
 
     total_time = 0
-
     path, marginal_time = astar_method(map, 0, 0, victims_coordinates[0][0], victims_coordinates[0][1])
     total_time += marginal_time + 1
-
+    
+    
     for i, victim in enumerate(victims_coordinates[:-1]):
         marginal_path, marginal_time = astar_method(map,
                                                     victims_coordinates[i][0], victims_coordinates[i][1],
@@ -235,7 +235,7 @@ def detail_rescue_plan(victims_coordinates, map, TLIM):
         total_time += marginal_time + 1
 
         if total_time >= 0.9*TLIM:
-
+            print("calculando retorno")
             marginal_path, marginal_time = astar_method(map, victims_coordinates[i+1][0], victims_coordinates[i+1][1],
                                                         0, 0)
 
@@ -272,8 +272,7 @@ def astar_method(mapa, actual_x, actual_y, obj_x, obj_y):
                 min_x = key[0]
             if key[1] < min_y:
                 min_y = key[1]
-        base_x = 0 - min_x  # altera posição relativa da base e posição atual
-        base_y = 0 - min_y
+                
         new_x = actual_x - min_x
         new_y = actual_y - min_y
         obj_x = obj_x - min_x
@@ -291,7 +290,7 @@ def astar_method(mapa, actual_x, actual_y, obj_x, obj_y):
             if key[1] > max_y:
                 max_y = key[1]
 
-        tam_maze = max(max_x, max_y) + 1  # tamanho matriz
+        tam_maze = max(max_x, max_y) + 1  # tamanho matriz geral
         maze_matrix = np.full((tam_maze, tam_maze), 100.0)  # preenche matriz com dificuldade 100
         for i in abs_map.keys():
             maze_matrix[i[1]][i[0]] = abs_map.get(i)[0]
