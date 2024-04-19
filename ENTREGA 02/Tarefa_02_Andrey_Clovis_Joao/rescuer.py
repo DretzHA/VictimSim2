@@ -27,7 +27,7 @@ import pandas as pd
 ## Classe que define o Agente Rescuer com um plano fixo
 
 class Rescuer(AbstAgent):
-    def __init__(self, env, config_file):
+    def __init__(self, env, config_file, datafolder):
         """ 
         @param env: a reference to an instance of the environment class
         @param config_file: the absolute path to the agent's config file"""
@@ -49,6 +49,7 @@ class Rescuer(AbstAgent):
         self.x = 0                  # the current x position of the rescuer when executing the plan
         self.y = 0                  # the current y position of the rescuer when executing the plan
         self.seq = pd.DataFrame(columns=['ID', 'x', 'y', 'grav', 'classe'])   #lista de vitimas salvas
+        self.datafolder = datafolder
 
                 
         # Starts in IDLE state.
@@ -272,18 +273,10 @@ class Rescuer(AbstAgent):
             rescuers = [None] * 4
             rescuers[0] = self                    # the master rescuer is the index 0 agent
             for i in range (1,4):
-                data_folder_name = os.path.join("datasets", "data_300v_90x90")
-                current_folder = os.path.abspath(os.getcwd())
-                data_folder = os.path.abspath(os.path.join(current_folder, data_folder_name))
                 filename = f"rescuer_config_{i+1:1d}.txt"
-                config_file = os.path.join(data_folder, filename)
-                env = Env(data_folder)
-                rescuers[i] = Rescuer(self.get_env(), config_file) 
+                config_file = os.path.join(self.datafolder, filename)
+                rescuers[i] = Rescuer(self.get_env(), config_file, self.datafolder) 
                 rescuers[i].map = self.map     # each rescuer have the map
             self.cluster_and_plan(rescuers, self.map, self.victims)
-            # rescuers[0].set_state(VS.ACTIVE)
-            # rescuers[1].set_state(VS.ACTIVE)
-            # rescuers[2].set_state(VS.ACTIVE)
-            # rescuers[3].set_state(VS.ACTIVE)
-            # print("")
+
             

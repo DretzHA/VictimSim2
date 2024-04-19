@@ -85,16 +85,16 @@ class Explorer(AbstAgent):
         obstacles = self.check_walls_and_lim()
 
         if self.NAME == "EXPLORER1BLUE":
-            direction_stack = [ 0, 2, 4, 6, 1, 3, 5, 7]
+            direction_stack = [ 0, 2, 4, 5, 3, 6, 1]
             #direction_stack = [7, 0, 1, 2, 3, 4, 5, 6]
         elif self.NAME == "EXPLORER2GREEN":
-            direction_stack = [0, 6, 4, 2, 7, 1, 3, 5]
+            direction_stack = [1, 2, 4, 5, 7, 6, 0, 3]
             #direction_stack = [5, 4, 3, 2, 1, 0, 7, 6]
         elif self.NAME == "EXPLORER3PURPLE":
-            direction_stack = [4, 2, 6, 0, 1, 3, 5, 7]
+            direction_stack = [3, 4, 6, 0, 1, 7, 2, 5]
             #direction_stack = [3, 4, 5, 6, 7, 0, 1, 2]
         else:
-            direction_stack = [6, 4, 2, 0, 7, 1, 3, 5]
+            direction_stack = [5, 6, 0, 1, 3, 2, 4, 7]
             #direction_stack = [1, 0, 7, 6, 5, 4 ,3, 2]
 
         i = 0
@@ -188,18 +188,20 @@ class Explorer(AbstAgent):
         """ The agent chooses the next action. The simulator calls this
         method at each cycle. Must be implemented in every agent"""
         #uso de varivais globais para ver término, mapa e vitimas de cada agente
+        
       
-        if self.get_rtime()>700:
+        if self.get_rtime()>1000:
+            qtd_ciclos = 30
+        elif self.get_rtime()>500:
             qtd_ciclos = 20
-        elif self.get_rtime()>100:
-            qtd_ciclos = 15
-        elif self.get_rtime()>50:
-            qtd_ciclos = 10
+        elif self.get_rtime()<200:
+            qtd_ciclos = 1
         else:
-            qtd_ciclos = 5
+            qtd_ciclos = 3
 
-        if (self.time_to_base * 2 < self.tempo_apos_astar) and (
+        if (self.time_to_base * 3 < self.tempo_apos_astar) and (
                 self.returning == 0):  # tempo de retornar é menor que tempo restante, continua a explorar
+           
             if self.cicles == 0:
                 self.path, self.time_to_base = self.astar_method(self.map, self.x, self.y)
                 self.tempo_apos_astar = self.get_rtime()
@@ -251,8 +253,10 @@ class Explorer(AbstAgent):
         base_y = 0 - min_y
         new_x = actual_x - min_x
         new_y = actual_y - min_y
-        obj_x = obj_x - min_x
-        obj_y = obj_y - min_y
+        # obj_x = obj_x - min_x
+        # obj_y = obj_y - min_y
+        obj_x = base_x
+        obj_y = base_y
         
         for key in mapa.map_data.keys():                        #altera posição do mapa relativo
             new_k0 = key[0] - min_x
@@ -276,10 +280,10 @@ class Explorer(AbstAgent):
         for i in range(0,len(path.items)):
             path.items[i] = (path.items[i][0] + min_x, path.items[i][1] + min_y)  #retorna posições absoluta matriz para relativa do mapa do agente
           
-        for i in range(1,len(self.path.items)+1):  
-            path.items.insert(0,self.path.items[-i])   
+        # for i in range(1,len(self.path.items)+1):  
+        #     path.items.insert(0,self.path.items[-i])   
         
-        time_to_base = time_to_base+self.time_to_base
+        # time_to_base = time_to_base+self.time_to_base
                       
         return path, time_to_base
 

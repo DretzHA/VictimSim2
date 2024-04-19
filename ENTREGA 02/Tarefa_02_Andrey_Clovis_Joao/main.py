@@ -30,7 +30,7 @@ def main(data_folder_name):
     explorer4_file = os.path.join(data_folder, "explorer_config_4.txt")
     
     # Instantiate agents rescuer and explorer
-    resc1 = Rescuer(env, rescuer1_file)
+    resc1 = Rescuer(env, rescuer1_file,data_folder_name)
     # resc2 = Rescuer(env, rescuer2_file)
     # resc3 = Rescuer(env, rescuer3_file)
     # resc4 = Rescuer(env, rescuer4_file)

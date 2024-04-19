@@ -235,7 +235,6 @@ def detail_rescue_plan(victims_coordinates, map, TLIM):
         total_time += marginal_time + 1
 
         if total_time >= 0.9*TLIM:
-            print("calculando retorno")
             marginal_path, marginal_time = astar_method(map, victims_coordinates[i+1][0], victims_coordinates[i+1][1],
                                                         0, 0)
 
