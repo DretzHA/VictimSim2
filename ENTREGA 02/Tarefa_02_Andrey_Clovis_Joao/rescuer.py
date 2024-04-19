@@ -22,6 +22,7 @@ from abc import ABC, abstractmethod
 from sklearn.metrics import silhouette_score
 from vs.environment import Env
 from collections import Counter
+import pandas as pd
 
 ## Classe que define o Agente Rescuer com um plano fixo
 
@@ -47,11 +48,13 @@ class Rescuer(AbstAgent):
         self.plan_walk_time = 0.0   # previewed time to walk during rescue
         self.x = 0                  # the current x position of the rescuer when executing the plan
         self.y = 0                  # the current y position of the rescuer when executing the plan
+        self.seq = pd.DataFrame(columns=['ID', 'x', 'y', 'grav', 'classe'])   #lista de vitimas salvas
 
                 
         # Starts in IDLE state.
         # It changes to ACTIVE when the map arrives
         self.set_state(VS.IDLE)
+
 
     def cluster_and_plan(self, rescuer_agents, map, victims):
         """Separates the victims into clusters and indicates one cluster to each rescuer"""
@@ -132,6 +135,7 @@ class Rescuer(AbstAgent):
         # No more actions to do
         if self.plan == []:  # empty list, no more actions to do
            #input(f"{self.NAME} has finished the plan [ENTER]")
+           
            return False
 
         # Takes the first action of the plan (walk action) and removes it from the plan
@@ -150,7 +154,22 @@ class Rescuer(AbstAgent):
             if there_is_vict:
                 rescued = self.first_aid() # True when rescued
                 if rescued:
-                    print(f"{self.NAME} Victim rescued at ({self.x}, {self.y})")
+                    #print(f"{self.NAME} Victim rescued at ({self.x}, {self.y})")
+                    key_vitima = [k for k, v in self.victims.items() if v[0] == (self.x,self.y)]
+                    gravidade = self.victims.get(key_vitima[0])
+                    gravidade = gravidade[1][6]
+                    if not key_vitima[0] in self.seq['ID'].values:
+                        new_row = [key_vitima[0], self.x, self.y, 0, gravidade]
+                        self.seq.loc[len(self.seq)] = new_row
+                        if self.NAME == "RESCUER1PINK":
+                            self.seq.to_csv("seq1.txt", header=False, index=False) #salva resultados sequencia 1
+                        elif self.NAME == "RESCUER2CYAN":
+                            self.seq.to_csv("seq2.txt", header=False, index=False) #salva resultados sequencia 2
+                        elif self.NAME == "RESCUER3YELLOW":
+                            self.seq.to_csv("seq3.txt", header=False, index=False) #salva resultados sequencia 3
+                        else:
+                            self.seq.to_csv("seq4.txt", header=False, index=False) #salva resultados sequencia 4
+                    
                 else:
                     print(f"{self.NAME} Plan fail - victim not found at ({self.x}, {self.x})")
         else:
