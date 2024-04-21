@@ -1,16 +1,14 @@
 import sys
 import os
-import time
 
 ## importa classes
 from vs.environment import Env
 from explorer import Explorer
 from rescuer import Rescuer
-import test_astar as Astar
 
 def main(data_folder_name):
     # Set the path to config files and data files for the environment
-    #Astar.example()
+
     current_folder = os.path.abspath(os.getcwd())
     data_folder = os.path.abspath(os.path.join(current_folder, data_folder_name))
 

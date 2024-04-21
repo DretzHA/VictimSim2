@@ -6,29 +6,30 @@ cost_matrix = []
 
 
 def planner_genetic_algorithm(map, victims, tlim):
+    """Genetic algorithm for permutation problem. Finds a suboptimal sequence for victim sequence within a cluster
+    @:param map: map from explorers
+     @:param: victims: victims dict
+     @:param: tlim: time limit for rescuer
+     """
 
     global cost_matrix
 
-    p = 50  # tamanho da população
-    pCROSS = 0.8
-    pMUT = 0.05
+    p = 100  # tamanho da população
+    pCROSS = 0.8  # probabilidade de crossover
+    pMUT = 0.08  # probabilidade de mutação
 
-    victims_list = [[i[0]] + [i[1][6]] for i in list(victims.values())]
-    print(victims_list)
+    victims_list = [[i[0]] + [i[1][6]] for i in list(victims.values())]  # Coordenadas + gravidade
 
-    cost_matrix = np.full((len(victims_list),len(victims_list)), None).tolist()
+    cost_matrix = np.full((len(victims_list),len(victims_list)), None).tolist()  # zera a matriz de custos dos trajetos
+    # entre pontos do cluster
 
-    population = generate_population(len(victims_list), p)
-    #[print(i) for i in population]
-
-    #total_fits = sum(fits)
-    #probas = [fit/total_fits for fit in fits]
+    population = generate_population(len(victims_list), p)  # geração da população
 
     generation = 0
 
     while True:
 
-        if generation > 60:
+        if generation > 100:
             break
 
         #print(f'Generation {generation}')
@@ -36,21 +37,24 @@ def planner_genetic_algorithm(map, victims, tlim):
         fits = []
         costs = []
 
-        population = crossover(population, pCROSS)
+        population = crossover(population, pCROSS)  # processo de crossover
 
-        population = mutation(population, pMUT)
+        population = mutation(population, pMUT)  # processo de mutação
 
+        # Cálculo do custo e da função fit para cada indivíduo
         for individual in population:
-            total_time, sequence = calculate_cost(individual, map, victims_list, tlim)
+            total_time, sequence = calculate_cost(individual, victims_list)
             costs.append(total_time)
-            fit = fitness_function(sequence, victims_list, generation)
+            fit = fitness_function(sequence, victims_list)
             fits.append(fit)
 
-        #print(f'Mean fit: {sum(fits)/len(fits)}\nMaximum fit: {max(fits)}')
+        print(f'Mean fit: {sum(fits)/len(fits)}\nMaximum fit: {max(fits)}')
 
+        # ranquamento por fit
         zipped_individuals = zip(fits, costs, population)
         zipped_individuals = sorted(zipped_individuals, key=lambda x: x[0], reverse=True)
 
+        # eliminação da metade da população com menor fit
         fits, costs, population = zip(*zipped_individuals)
         fits = list(fits[:len(fits)//2])
         costs = list(costs[:len(costs) // 2])
@@ -58,6 +62,7 @@ def planner_genetic_algorithm(map, victims, tlim):
 
         generation += 1
 
+    # Determinação da sequência com fit máximo E custo (tempo) mínimo
     max_value = max(fits)
     max_fits = [i for i, val in enumerate(fits) if val == max_value]
     max_fits_costs = [costs[index] for index in max_fits]
@@ -70,12 +75,14 @@ def planner_genetic_algorithm(map, victims, tlim):
     print(victims_coordinates)
     victims_coordinates = [i[0] for i in victims_coordinates]
 
+    # Cálculo do trajeto completo por meio do A*
     plan = detail_rescue_plan(victims_coordinates, map, tlim)
 
     plan = plan.items[::-1]
 
     directions = []
 
+    # Transformando a lista de coordenadas em lista de dx, dy
     for i in range(len(plan)-1):
 
         if plan[i+1] in victims_coordinates:
@@ -86,47 +93,51 @@ def planner_genetic_algorithm(map, victims, tlim):
     return directions
 
 
-def fitness_function(sequence, victims_list, generation):
+def fitness_function(sequence, victims_list):
+    """Função de fit para uma dada sequência de vítimas
+    @:param sequence: sequência de vítimas
+    @:param victims_list lista de dados das vítimas"""
+    fit = 0
 
-    Vs1 = Vs2 = Vs3 = Vs4 = 0
+    _fourth = len(sequence)//4
 
-    if generation < 10:
-        sequence = sequence[:len(sequence)//4]
-    elif generation < 30:
-        sequence = sequence[:len(sequence) // 2]
-    else:
-        sequence = sequence[:3*len(sequence) // 4]
+    for idx, i in enumerate(sequence):
 
-    for i in sequence:
+        # Vítimas mais críticas aumentam mais o fit de uma sequência.
+        # Quanto mais ao início da sequência estiver uma vítima, maior o aumento de fit
+
+        if idx < _fourth:
+            factor = 4
+        elif idx < 2*_fourth:
+            factor = 3
+        elif idx < 3*_fourth:
+            factor = 2
+        else:
+            factor = 1
+
         if victims_list[i][1] == 1:
-            Vs1 += 1
+            fit += 10*factor
         elif victims_list[i][1] == 2:
-            Vs2 += 1
+            fit += 6*factor
         elif victims_list[i][1] == 3:
-            Vs3 += 1
+            fit += 2*factor
         elif victims_list[i][1] == 4:
-            Vs4 += 1
+            fit += factor
 
-    return 6*Vs1 + 3*Vs2 + 2*Vs3 + Vs4
-
-
-def selection(probas):
-    r = random.random()
-    sum = 0
-    i = 0
-    for proba in probas:
-        sum += proba
-        if sum > r:
-            return i
-        i += 1
+    return fit
 
 
 def mutation(population, pMUT):
+    """Função de mutação sobre uma população
+    @:param population: população do AG
+    @:param pMUT: probabilidade de mutação"""
 
     for individual in population:
 
         if random.random() > pMUT:
             continue
+
+        # Mutação por troca mútua de alelos no mesmo indivíduo
 
         idx1, idx2 = random.sample(range(0, len(individual)), 2)
 
@@ -140,6 +151,9 @@ def mutation(population, pMUT):
 
 
 def crossover(population, pCROSS):
+    """Função de crossover sobre uma população
+    @:param population: população do AG
+    @:param pCROSS: probabilidade de crossover"""
 
     random.shuffle(population)
 
@@ -151,20 +165,22 @@ def crossover(population, pCROSS):
         if random.random() > pCROSS:
             population.append(list1)
             population.append(list2)
-            continue  # Skip crossover for this pair
+            continue
 
         min_len = min(len(list1), len(list2))
 
-        # Choose random start index and length for the crossover
+        # índices de início e fim do crossover
         start = random.randint(0, min_len - 1)
         length = random.randint(1, min_len - start)
 
-        # Perform the crossover
+        # troca de partes entre cromossomos
         temp1 = list1[start:start + length]
         temp2 = list2[start:start + length]
         list1[start:start + length] = temp2
         list2[start:start + length] = temp1
 
+        # Mecanismo que corrige crossovers infactíveis
+        # Os elementos duplicados que não sofreram crossover são substituídos até que não haja mai duplicados
         for index, element in enumerate(list1):
             if index not in range(start, start+length):
                 if list1.count(element) > 1:
@@ -180,6 +196,7 @@ def crossover(population, pCROSS):
                         if list2.count(list2[index]) == 1:
                             break
 
+        # Adição dos novos cromossomos à população
         population.append(list1)
         population.append(list2)
 
@@ -187,71 +204,93 @@ def crossover(population, pCROSS):
 
 
 def generate_population(n_alleles, n_individuals):
+    """Criação de uma população
+    @:param n_alleles: número de alelos de cada indivíduo
+    @:param n_individuals: número de cromossomos da população"""
 
     return [list(np.random.permutation(n_alleles)) for i in range(n_individuals)]
 
 
 def manhattan_distance(x_start, y_start, x_end, y_end):
+    """Cálculo da distância de Manhattan para estimação do custo do caminho entre coordenadas"""
+
     return abs(x_end - x_start) + abs(y_end - y_start)
 
 
-def calculate_cost(sequence, map, victims_list, tlim):
-    #cost = astar_method(map, 0, 0, victims_list[sequence[0]][0][0], victims_list[sequence[0]][0][1]) + 1
+def calculate_cost(sequence, victims_list):
+    """Cálculo do custo de uma sequência. O custo é o tempo estimado para a sequência. A estimativa é pela
+    distância de Manhattan entre os pontos
+    @:param sequence: a sequência de vítimas
+    @:param victims_list: lista de vítimas, com coordenadas e gravidades"""
+
+    # Custo da base ao primeiro ponto
     cost = 1 + manhattan_distance(0, 0, victims_list[sequence[0]][0][0], victims_list[sequence[0]][0][1])
+
     for i in range(len(sequence)-1):
+
+        # Consulta uma variável de memória dos custos dos trajetos
         try:
-            marginal_cost = cost_matrix[sequence[i]][sequence[i+1]] + 1
-            cost += marginal_cost # +1 por conta do tempo do kit de primeiros socorros
+            marginal_cost = cost_matrix[sequence[i]][sequence[i+1]] + 1  # +1 por conta do kit de primeiros socorros
+            cost += marginal_cost
+        # Se a distãncia não estiver na variável cost_matrix, calcula a distância de Manhattan e guarda
         except TypeError:
-            #marginal_cost = astar_method(map,
-                                         #victims_list[sequence[i]][0][0], victims_list[sequence[i]][0][1],
-                                         #victims_list[sequence[i+1]][0][0], victims_list[sequence[i+1]][0][1])
             marginal_cost = manhattan_distance(victims_list[sequence[i]][0][0], victims_list[sequence[i]][0][1],
                                                victims_list[sequence[i+1]][0][0], victims_list[sequence[i+1]][0][1])
             cost_matrix[sequence[i]][sequence[i+1]] = marginal_cost
             cost_matrix[sequence[i+1]][sequence[i]] = marginal_cost
             cost += (marginal_cost + 1)
 
-    #cost += astar_method(map, victims_list[sequence[-1]][0][0], victims_list[sequence[-1]][0][1], 0, 0)
+    # Custo do último ponto à base
     cost += manhattan_distance(victims_list[sequence[-1]][0][0], victims_list[sequence[-1]][0][1], 0, 0)
+
     return cost, sequence
 
 
 def detail_rescue_plan(victims_coordinates, map, TLIM):
+    """Obtenção do trajeto completo de uma sequência de vítimas. Usa o A*
+    @:param victims_coordinates: lista de dados das vítimas
+    @:param map: mapa recebido dos exploradores
+    @:param TLIM: tempo limite"""
 
     total_time = 0
+    # tempo e caminho da base ao primeiro ponto
     path, marginal_time = astar_method(map, 0, 0, victims_coordinates[0][0], victims_coordinates[0][1])
     total_time += marginal_time + 1
-    
-    
+
     for i, victim in enumerate(victims_coordinates[:-1]):
+        # tempo e caminho do ponto atual ao próximo ponto
         marginal_path, marginal_time = astar_method(map,
                                                     victims_coordinates[i][0], victims_coordinates[i][1],
                                                     victims_coordinates[i+1][0], victims_coordinates[i+1][1])
 
-        for j in range(2, len(marginal_path.items)+1):
-            path.items.insert(0, marginal_path.items[-j])
+        # tempo e caminho entre o próximo ponto e a base
+        path_to_base, time_to_base = astar_method(map, victims_coordinates[i+1][0], victims_coordinates[i+1][1], 0, 0)
 
-        total_time += marginal_time + 1
+        # Se não houver tempo para seguir mais um ponto e retornar à base, retorna a base a partir do ponto atual
+        if total_time + marginal_time + time_to_base >= 0.95*TLIM:
 
-        if total_time >= 0.9*TLIM:
-            marginal_path, marginal_time = astar_method(map, victims_coordinates[i+1][0], victims_coordinates[i+1][1],
-                                                        0, 0)
+            total_time += last_time_to_base
 
-            for j in range(2, len(marginal_path.items) + 1):
-                path.items.insert(0, marginal_path.items[-j])
-
-            total_time += marginal_time
+            for j in range(2, len(last_path_to_base.items) + 1):
+                path.items.insert(0, last_path_to_base.items[-j])
 
             print(f"Full path WON'T be executed. Returning partial path with total time of {total_time}...")
             return path
 
-    marginal_path, marginal_time = astar_method(map, victims_coordinates[-1][0], victims_coordinates[-1][1], 0, 0)
+        total_time += marginal_time + 1
 
-    for i in range(2, len(marginal_path.items) + 1):
-        path.items.insert(0, marginal_path.items[-i])
+        for j in range(2, len(marginal_path.items) + 1):
+            path.items.insert(0, marginal_path.items[-j])
 
-    total_time += marginal_time
+        # Armazenamento do tempo e caminho à base para a próxima iteração
+        last_path_to_base = path_to_base
+        last_time_to_base = time_to_base
+
+    # Inserção do caminho do último ponto à base
+    for j in range(2, len(last_path_to_base.items) + 1):
+        path.items.insert(0, last_path_to_base.items[-j])
+
+    total_time += last_time_to_base
     print(f"Full path WILL be executed. Returning path with total time of {total_time}...")
 
     return path
