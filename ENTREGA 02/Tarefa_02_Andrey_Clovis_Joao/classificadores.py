@@ -363,15 +363,14 @@ def dict2df(victims_dict):
 #############################################################################################################################
 
 ########################################################PARA REALIZAR O TESTE, BASTA COLOCAR O CAMINHO DO ARQUIVO####################
-# data = pd.read_csv("datasets\\data_800v\\env_vital_signals.txt",  header=None) # ler dados
-# data.columns = ['ID', 'pSist', 'pDiast', 'qPA', 'pulso', 'resp', 'grav', 'classe'] #atribui as colunas ao DF
+data = pd.read_csv("datasets\\data_800v\\env_vital_signals.txt",  header=None) # ler dados
+data.columns = ['ID', 'pSist', 'pDiast', 'qPA', 'pulso', 'resp', 'grav', 'classe'] #atribui as colunas ao DF
 # train_data_cart() #funcao treinamento do modelo
-#resultado = fuzzy(data)
-# resultado = classification_cart(data) #realiza a classificacao com base nos dados por CART
-# resultado_csv = pd.DataFrame(columns=['ID', 'x', 'y', 'grav', 'classe'])
-# resultado_csv['ID'] = resultado['ID']
-# resultado_csv['classe'] = resultado['classe']
-# resultado_csv.fillna(0, inplace=True)
-#print(resultado_csv)
-# resultado_csv.to_csv("pred.txt", header=False, index=False)
+resultado = fuzzy(data)
+#resultado = classification_cart(data) #realiza a classificacao com base nos dados por CART
+resultado_csv = pd.DataFrame(columns=['ID', 'x', 'y', 'grav', 'classe'])
+resultado_csv['ID'] = resultado['ID']
+resultado_csv['classe'] = resultado['classe']
+resultado_csv.fillna(0, inplace=True)
+resultado_csv.to_csv("pred.txt", header=False, index=False)
 
