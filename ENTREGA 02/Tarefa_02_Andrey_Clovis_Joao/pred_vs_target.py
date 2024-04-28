@@ -16,8 +16,8 @@
 
 import csv
 import numpy as np
-from sklearn.metrics import confusion_matrix, classification_report, accuracy_score, mean_squared_error
-
+from sklearn.metrics import ConfusionMatrixDisplay, confusion_matrix, classification_report, accuracy_score, mean_squared_error
+import matplotlib.pyplot as plt
 # Input CSV file names
 file_target = 'target.txt'
 file_predict = 'pred.txt'
@@ -97,6 +97,9 @@ print(f"CLASSIFICATION METRICS")
 conf_matrix = confusion_matrix(actual_labels, predicted_labels, labels=[1,2,3,4])
 accuracy = accuracy_score(actual_labels, predicted_labels)
 class_report = classification_report(actual_labels, predicted_labels, labels=[1,2,3,4], target_names=['Critico', 'Instavel', 'Pot Estavel', 'Estavel'], zero_division=0)
+disp_cm = ConfusionMatrixDisplay(confusion_matrix=conf_matrix, display_labels=[1,2,3,4])
+# disp_cm.plot()
+# plt.show()
 
 print("\nConfusion Matrix:")
 print(conf_matrix)

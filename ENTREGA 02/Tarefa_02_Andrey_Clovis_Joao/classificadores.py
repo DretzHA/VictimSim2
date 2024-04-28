@@ -372,6 +372,6 @@ def dict2df(victims_dict):
 # resultado_csv['ID'] = resultado['ID']
 # resultado_csv['classe'] = resultado['classe']
 # resultado_csv.fillna(0, inplace=True)
-#print(resultado_csv)
+# #print(resultado_csv)
 # resultado_csv.to_csv("pred.txt", header=False, index=False)
 
