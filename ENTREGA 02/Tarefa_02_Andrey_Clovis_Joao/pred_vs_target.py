@@ -7,7 +7,7 @@
 ## Os arquivos a serem comparados são: 
 ##    file_target: arquivo com os resultados de referência
 ##    file_predict: arquivo com os resultados preditos
-##
+##0.9
 ##    formato dos dois arquivos: <id, x, y, gravity, class>
 ##
 ## Os arquivos de referência e de predição podem ter tamanhos diferentes: o da predição pode
