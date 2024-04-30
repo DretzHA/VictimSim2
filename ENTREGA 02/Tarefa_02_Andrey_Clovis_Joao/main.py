@@ -54,7 +54,8 @@ if __name__ == '__main__':
         #data_folder_name = os.path.join("datasets", "data_42v_20x20")
         #data_folder_name = os.path.join("datasets", "data_132v_100x80")
         #data_folder_name = os.path.join("datasets", "data_225v_100x80")
-        data_folder_name = os.path.join("datasets", "data_300v_90x90")
+        #data_folder_name = os.path.join("datasets", "data_300v_90x90")
+        data_folder_name = os.path.join("datasets", "data_320v_90x90")
      
     main(data_folder_name)
 
