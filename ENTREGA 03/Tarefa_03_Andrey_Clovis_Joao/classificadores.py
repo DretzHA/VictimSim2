@@ -336,8 +336,8 @@ def dict2df(victims_dict):
         df_victims['posY']=df_victims['posY'].astype(int)
         
     df_victims = classification_cart(df_victims) #manda dataframe para funcao que vai realizar a classificao por arvore de ddecisao
-    #df_victims = fuzzy(df_victims) #manda dataframe para funcao que vai realizar a classificao por fuzzy
-    df_victims = test_neural_regressor_grav(df_victims)
+    df_victims = test_neural_regressor_grav(df_victims) #manda dataframe para funcao que vai realizara gravidade por regressao MLP
+    
     resultado_csv = pd.DataFrame(columns=['ID', 'x', 'y', 'grav', 'classe']) #cria dataframe para gravarr resultados
     resultado_csv['ID'] = df_victims['ID']
     resultado_csv['x'] = df_victims['posX']
@@ -359,8 +359,11 @@ def dict2df(victims_dict):
     for key, value in victims_per_agent.items():
       '''coloca o valor de gravidade para dentro do dict das vitimas'''
       classe = df_victims.iloc[j,6]
+      grav = df_victims.iloc[j,7]
       value[1].append(classe)
+      value[1].append(grav)
       j+=1
+    
     
   return victims_dict
 #############################################################################################################################
@@ -375,27 +378,43 @@ def train_neural_regressor_grav():
   Y = train_data['grav']
   #split train and test dataset
   X_train, X_test, y_train, y_test = train_test_split(X, Y, test_size=0.2, shuffle=True)
-  #MLP settings
-  nn = MLPRegressor(
-    activation='relu',
-    hidden_layer_sizes=(10, 100),
-    alpha=0.001,
-    random_state=20,
-    early_stopping=False
-  )
   
-  nn.fit(X_train, y_train) #train data
+  parameters = {
+      'hidden_layer_sizes': [(200,),(100,),(50,)],
+      'activation': ['relu', 'logistic', 'identity']
+  }
+
+   #MLP settings
+  nn = MLPRegressor(random_state=42, max_iter=1000)
+  # grid search using cross-validation
+  # cv = 3 is the number of folds
+  # scoring = 'f' the metric for chosing the best model
+  nn_grav = GridSearchCV(nn, parameters, cv=5, scoring='neg_root_mean_squared_error')
+  nn_grav.fit(X_train, y_train)
   
-  # Make prediction
-  pred = nn.predict(X_test)
-  #
-  # Calculate accuracy and error metrics
-  #
-  test_set_rsquared = nn.score(X_test, y_test)
+  results_nn = nn_grav.cv_results_
+  print(results_nn)
+  with open('resultados_gravidade_gridsearch.csv','w') as f:
+    w = csv.writer(f)
+    w.writerows(results_nn.items())
+  # the best tree according to the f1 score
+  best = nn_grav.best_estimator_
+  print("\n* Melhor classificador *")
+  print(nn_grav.best_estimator_)
+  
+  
+  best.fit(X_train, y_train) #train data
+  
+  # # Make prediction
+  pred = best.predict(X_test)
+  # #
+  # # Calculate accuracy and error metrics
+  # #
+  test_set_rsquared = best.score(X_test, y_test)
   test_set_rmse = np.sqrt(mean_squared_error(y_test, pred))
-  #
-  # Print R_squared and RMSE value
-  #
+  # #
+  # # Print R_squared and RMSE value
+  # #
   print("Gravidade:")
   print('R_squared value: ', test_set_rsquared)
   print('RMSE: ', test_set_rmse)
@@ -403,7 +422,7 @@ def train_neural_regressor_grav():
   #SAVE MODEL
   
   with open('model_gravidade.pkl','wb') as f:
-    pickle.dump(nn,f)
+    pickle.dump(best,f)
   
 def train_neural_regressor_prior():
   # Load the train dataset
@@ -416,26 +435,42 @@ def train_neural_regressor_prior():
   #split train and test dataset
   X_train, X_test, y_train, y_test = train_test_split(X, Y, test_size=0.2, shuffle=True)
   #MLP settings
-  nn = MLPRegressor(
-    activation='relu',
-    hidden_layer_sizes=(10, 100),
-    alpha=0.001,
-    random_state=20,
-    early_stopping=False
-  )
+  parameters = {
+      'hidden_layer_sizes': [(200,),(100,),(50,)],
+      'activation': ['relu', 'logistic', 'identity']
+  }
+
+   #MLP settings
+  nn = MLPRegressor(random_state=42, max_iter=1000)
+  # grid search using cross-validation
+  # cv = 3 is the number of folds
+  # scoring = 'f' the metric for chosing the best model
+  nn_prior = GridSearchCV(nn, parameters, cv=5, scoring='neg_root_mean_squared_error')
+  nn_prior.fit(X_train, y_train)
   
-  nn.fit(X_train, y_train) #train data
+  results_nn = nn_prior.cv_results_
+  print(results_nn)
+  with open('resultados_prioridade_gridsearch.csv','w') as f:
+    w = csv.writer(f)
+    w.writerows(results_nn.items())
+  # the best tree according to the f1 score
+  best = nn_prior.best_estimator_
+  print("\n* Melhor classificador *")
+  print(nn_prior.best_estimator_)
   
-  # Make prediction
-  pred = nn.predict(X_test)
-  #
-  # Calculate accuracy and error metrics
-  #
-  test_set_rsquared = nn.score(X_test, y_test)
+  
+  best.fit(X_train, y_train) #train data
+  
+  # # Make prediction
+  pred = best.predict(X_test)
+  # #
+  # # Calculate accuracy and error metrics
+  # #
+  test_set_rsquared = best.score(X_test, y_test)
   test_set_rmse = np.sqrt(mean_squared_error(y_test, pred))
-  #
-  # Print R_squared and RMSE value
-  #
+  # #
+  # # Print R_squared and RMSE value
+  # #
   print("Prioridade:")
   print('R_squared value: ', test_set_rsquared)
   print('RMSE: ', test_set_rmse)
@@ -443,7 +478,7 @@ def train_neural_regressor_prior():
   #SAVE MODEL
   
   with open('model_prioridade.pkl','wb') as f:
-    pickle.dump(nn,f)
+    pickle.dump(best,f)
   
   
 def test_neural_regressor_grav(data):
@@ -456,12 +491,12 @@ def test_neural_regressor_grav(data):
   y_pred = model.predict(X_validation)
   data['grav'] = y_pred
   
-  #test_set_rmse = np.sqrt(mean_squared_error(original_data['grav'], y_pred))
-  #
-  # Print R_squared and RMSE value
-  #
-  #print("Gravidade:")
-  #print('RMSE: ', test_set_rmse)
+  # test_set_rmse = np.sqrt(mean_squared_error(original_data['grav'], y_pred))
+  # #
+  # # Print R_squared and RMSE value
+  # #
+  # print("Gravidade:")
+  # print('RMSE: ', test_set_rmse)
   
   return data
 

@@ -56,7 +56,6 @@ class Rescuer(AbstAgent):
         # It changes to ACTIVE when the map arrives
         self.set_state(VS.IDLE)
 
-
     def cluster_and_plan(self, rescuer_agents, map, victims):
         """Separates the victims into clusters and indicates one cluster to each rescuer"""
 
@@ -157,11 +156,16 @@ class Rescuer(AbstAgent):
                 if rescued:
                     #print(f"{self.NAME} Victim rescued at ({self.x}, {self.y})")
                     key_vitima = [k for k, v in self.victims.items() if v[0] == (self.x,self.y)]
-                    gravidade = self.victims.get(key_vitima[0])
-                    gravidade = gravidade[1][6]
+                    dados_vitimas = self.victims.get(key_vitima[0])
+                    gravidade = dados_vitimas[1][6]
+                    valor_grav = dados_vitimas[1][7]
                     if not key_vitima[0] in self.seq['ID'].values:
-                        new_row = [key_vitima[0], self.x, self.y, 0, gravidade]
+                        new_row = [key_vitima[0], self.x, self.y, valor_grav, gravidade]
                         self.seq.loc[len(self.seq)] = new_row
+                        self.seq['ID']=self.seq['ID'].astype(int)
+                        self.seq['x']=self.seq['x'].astype(int)
+                        self.seq['y']=self.seq['y'].astype(int)
+                        self.seq['classe']=self.seq['classe'].astype(int)
                         if self.NAME == "RESCUER1PINK":
                             self.seq.to_csv("clusters\\seq1.txt", header=False, index=False) #salva resultados sequencia 1
                         elif self.NAME == "RESCUER2CYAN":
