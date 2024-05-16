@@ -1,9 +1,10 @@
 import test_astar
 import random
 import numpy as np
+import classificadores
+import pandas as pd
 
 cost_matrix = []
-
 
 def planner_genetic_algorithm(map, victims, tlim):
     """Genetic algorithm for permutation problem. Finds a suboptimal sequence for victim sequence within a cluster
@@ -18,7 +19,7 @@ def planner_genetic_algorithm(map, victims, tlim):
     pCROSS = 0.8  # probabilidade de crossover
     pMUT = 0.08  # probabilidade de mutação
 
-    victims_list = [[i[0]] + [i[1][6]] for i in list(victims.values())]  # Coordenadas + gravidade
+    victims_list = [[i[0]] + [i[1][6]] + [i[1][7]] for i in list(victims.values())]  # Coordenadas + classe gravidade + gravidade
 
     cost_matrix = np.full((len(victims_list),len(victims_list)), None).tolist()  # zera a matriz de custos dos trajetos
     # entre pontos do cluster
@@ -45,7 +46,7 @@ def planner_genetic_algorithm(map, victims, tlim):
         for individual in population:
             total_time, sequence = calculate_cost(individual, victims_list)
             costs.append(total_time)
-            fit = fitness_function(sequence, victims_list)
+            fit = fitness_function(sequence, victims_list, map)
             fits.append(fit)
 
         print(f'Mean fit: {sum(fits)/len(fits)}\nMaximum fit: {max(fits)}')
@@ -93,37 +94,70 @@ def planner_genetic_algorithm(map, victims, tlim):
     return directions
 
 
-def fitness_function(sequence, victims_list):
+def fitness_function(sequence, victims_list, map):
     """Função de fit para uma dada sequência de vítimas
     @:param sequence: sequência de vítimas
     @:param victims_list lista de dados das vítimas"""
+    
+    df_prioridades = pd.DataFrame(columns=['x1', 'x2', 'x3', 'x4', 'p']) #cria dataframe 
+    
     fit = 0
 
     _fourth = len(sequence)//4
-
+    
     for idx, i in enumerate(sequence):
-
+        
+        # TAREFA 02
+        
         # Vítimas mais críticas aumentam mais o fit de uma sequência.
         # Quanto mais ao início da sequência estiver uma vítima, maior o aumento de fit
 
-        if idx < _fourth:
-            factor = 4
-        elif idx < 2*_fourth:
-            factor = 3
-        elif idx < 3*_fourth:
-            factor = 2
-        else:
-            factor = 1
+        # if idx < _fourth:
+        #     factor = 4
+        # elif idx < 2*_fourth:
+        #     factor = 3
+        # elif idx < 3*_fourth:
+        #     factor = 2
+        # else:
+        #     factor = 1
 
-        if victims_list[i][1] == 1:
-            fit += 10*factor
-        elif victims_list[i][1] == 2:
-            fit += 6*factor
-        elif victims_list[i][1] == 3:
-            fit += 2*factor
-        elif victims_list[i][1] == 4:
-            fit += factor
+        # if victims_list[i][1] == 1:
+        #     fit += 10*factor
+        # elif victims_list[i][1] == 2:
+        #     fit += 6*factor
+        # elif victims_list[i][1] == 3:
+        #     fit += 2*factor
+        # elif victims_list[i][1] == 4:
+        #     fit += factor
+                
+        # TAREFA 03 - FIT ARTAVÉS DA PRIORIDADE DA REDE NEURAL##################################
+        
+        adjacent_squares = ((0, -1), (0, 1), (-1, 0), (1, 0), (-1, -1), (-1, 1), (1, -1), (1, 1)) #espaços adjacentes para calcular dificuldad ed acesso
+        
+        coord = victims_list[i][0] #coordenada da vitima
+        coord_map = map.map_data.get(coord) #get nos values do dict do mapa
+        x1 = coord_map[0] #dificuldade no local da vitima
+        
+        for new_position in adjacent_squares: #para cada posição adjacesnte da vitima
+            new_coord = (coord[0] + new_position[0], coord[1] + new_position[1]) # coordenada adjacesnte
+            if new_coord in map.map_data: #se existe no mapa, então soma o valor da dificuldade
+                coord_map = map.map_data.get(new_coord)
+                x1 += coord_map[0] 
+            else: # se não existe no mapa, atribui valor 100
+                x1 += 100
 
+        x2 = victims_list[i][2] #gravidade da vitima  
+        x3 = np.sqrt(pow(coord[0],2)+pow(coord[1],2)) #distancia da vitima ate a base
+        x4 = idx+1 #posicao na sequencia
+        new_row = [x1, x2, x3, x4, 0]
+        #df_prioridades.loc[0] = new_row
+        df_prioridades.loc[len(df_prioridades)] = new_row #append row in dataframe
+        #prior_value = classificadores.test_neural_regressor_prior(df_prioridades) #reotrna valor da prioridade
+        #fit += prior_value[0] #soma valor no calculo do fit
+        
+    prior_value = classificadores.test_neural_regressor_prior(df_prioridades) 
+    fit = prior_value['p'].sum()
+    
     return fit
 
 

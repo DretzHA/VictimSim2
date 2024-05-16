@@ -510,7 +510,7 @@ def test_neural_regressor_prior(data):
   X_validation = data[features]
   y_pred = model.predict(X_validation)
   data['p'] = y_pred
-    
+
   return data
 
 
