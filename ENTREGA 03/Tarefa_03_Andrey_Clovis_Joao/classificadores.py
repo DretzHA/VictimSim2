@@ -13,7 +13,7 @@ from skfuzzy import control as ctrl
 import pickle
 from sklearn.metrics import accuracy_score, confusion_matrix, ConfusionMatrixDisplay, classification_report
 import csv
-#pd.set_option('future.no_silent_downcasting', True)
+pd.set_option('future.no_silent_downcasting', True)
 from sklearn.metrics import mean_squared_error
 
 ##########################################DECISION TREE TREINAMENTO##################################################
@@ -403,20 +403,19 @@ def train_neural_regressor_grav():
   print(nn_grav.best_estimator_)
   
   
-  best.fit(X_train, y_train) #train data
+  best.fit(X_train, y_train) #train data with best estimator
   
   # # Make prediction
   pred = best.predict(X_test)
   # #
   # # Calculate accuracy and error metrics
   # #
-  test_set_rsquared = best.score(X_test, y_test)
+  # test_set_rsquared = best.score(X_test, y_test)
   test_set_rmse = np.sqrt(mean_squared_error(y_test, pred))
   # #
   # # Print R_squared and RMSE value
   # #
   print("Gravidade:")
-  print('R_squared value: ', test_set_rsquared)
   print('RMSE: ', test_set_rmse)
   
   #SAVE MODEL
@@ -466,13 +465,13 @@ def train_neural_regressor_prior():
   # #
   # # Calculate accuracy and error metrics
   # #
-  test_set_rsquared = best.score(X_test, y_test)
+  #test_set_rsquared = best.score(X_test, y_test)
   test_set_rmse = np.sqrt(mean_squared_error(y_test, pred))
   # #
   # # Print R_squared and RMSE value
   # #
   print("Prioridade:")
-  print('R_squared value: ', test_set_rsquared)
+  #print('R_squared value: ', test_set_rsquared)
   print('RMSE: ', test_set_rmse)
   
   #SAVE MODEL
@@ -491,6 +490,9 @@ def test_neural_regressor_grav(data):
   y_pred = model.predict(X_validation)
   data['grav'] = y_pred
   
+  
+   ############PARA VERIFICAR RMSE COM DADO DE TESTE, DESCOMENTAR. PARA RODAR SISTEMA MULTI AGENTE, DEIXAR COMENTADO###########################
+  
   # test_set_rmse = np.sqrt(mean_squared_error(original_data['grav'], y_pred))
   # #
   # # Print R_squared and RMSE value
@@ -504,12 +506,24 @@ def test_neural_regressor_grav(data):
 def test_neural_regressor_prior(data):
   with open('model_prioridade.pkl', 'rb') as f:
     model = pickle.load(f)
-
-  original_data = data.copy(deep=True) #copia original para RMSE
+    
   features = ['x1', 'x2', 'x3','x4']
   X_validation = data[features]
   y_pred = model.predict(X_validation)
   data['p'] = y_pred
+  
+  
+  
+  ############PARA VERIFICAR RMSE COM DADO DE TESTE, DESCOMENTAR. PARA RODAR SISTEMA MULTI AGENTE, DEIXAR COMENTADO###########################
+  
+  # original_data = pd.read_csv("datasets\\data_300v_90x90\\rescuer_prior_preblind_target.txt",  header=None) # dataset com resultados para RMSE
+  # original_data.columns = ['x1', 'x2', 'x3', 'x4', 'p'] #atribui as colunas ao DF
+  # test_set_rmse = np.sqrt(mean_squared_error(original_data['p'], y_pred))
+  # #
+  # # Print R_squared and RMSE value
+  # #
+  # print("Prioridade:")
+  # print('RMSE: ', test_set_rmse)
 
   return data
 
@@ -518,22 +532,22 @@ def test_neural_regressor_prior(data):
 # data_grav = pd.read_csv("datasets\\data_800v\\env_vital_signals.txt",  header=None) # ler dados
 # data_grav.columns = ['ID', 'pSist', 'pDiast', 'qPA', 'pulso', 'resp', 'grav', 'classe'] #atribui as colunas ao DF
 
-# data_prior = pd.read_csv("datasets\\data_300v_90x90\\rescuer_prior_preblind.txt",  header=None) # ler dados
-# data_prior.columns = ['x1', 'x2', 'x3', 'x4'] #atribui as colunas ao DF
+# data_prior = pd.read_csv("datasets\\data_300v_90x90\\rescuer_prior_preblind.txt",  header=None) # ler dados prioridades
+# data_prior.columns = ['x1', 'x2', 'x3', 'x4'] #atribui as colunas ao DF prioridades
 
-#train_data_cart() #funcao treinamento do modelo de classificação]
+#train_data_cart() #funcao treinamento do modelo de classificação
 #train_neural_regressor_grav() #funcao de treinamento regressão MLP
 #train_neural_regressor_prior() #funcao de treinamento regressão prioridade
 
 
 #resultado = fuzzy(data_grav)
 # resultado = classification_cart(data_grav) #realiza a classificacao com base nos dados por CART
-# resultado_csv = pd.DataFrame(columns=['ID', 'x', 'y', 'grav', 'classe'])
+# resultado_csv = pd.DataFrame(columns=['ID', 'x', 'y', 'grav', 'classe']) #datarame do resultado das classes
 # resultado_csv['ID'] = resultado['ID']
 # resultado_csv['classe'] = resultado['classe']
 # resultado_csv.fillna(0, inplace=True)
 #print(resultado_csv)
-# resultado_csv.to_csv("pred.txt", header=False, index=False)
+# resultado_csv.to_csv("pred.txt", header=False, index=False) #salvar arquivo com predição de classes
 
-# test_neural_regressor_grav(data_grav)
-# test_neural_regressor_prior(data_prior)
+# test_neural_regressor_grav(data_grav) #testa regressor de gravidades
+# test_neural_regressor_prior(data_prior) #testa regressor das prioridades

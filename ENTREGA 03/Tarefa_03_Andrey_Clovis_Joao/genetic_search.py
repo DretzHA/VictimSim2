@@ -3,7 +3,9 @@ import random
 import numpy as np
 import classificadores
 import pandas as pd
-
+import warnings
+pd.set_option('future.no_silent_downcasting', True)
+warnings.simplefilter(action='ignore', category=FutureWarning)
 cost_matrix = []
 
 def planner_genetic_algorithm(map, victims, tlim):
@@ -100,6 +102,9 @@ def fitness_function(sequence, victims_list, map):
     @:param victims_list lista de dados das vítimas"""
     
     df_prioridades = pd.DataFrame(columns=['x1', 'x2', 'x3', 'x4', 'p']) #cria dataframe 
+    dict_prioridades = {} # dictoriny que será transformada em dataframe, para agilizar processamento
+    i_d = 0 #contador para add entradas no dict
+    
     
     fit = 0
 
@@ -112,28 +117,27 @@ def fitness_function(sequence, victims_list, map):
         # Vítimas mais críticas aumentam mais o fit de uma sequência.
         # Quanto mais ao início da sequência estiver uma vítima, maior o aumento de fit
 
-        # if idx < _fourth:
-        #     factor = 4
-        # elif idx < 2*_fourth:
-        #     factor = 3
-        # elif idx < 3*_fourth:
-        #     factor = 2
-        # else:
-        #     factor = 1
+        if idx < _fourth:
+            factor = 4
+        elif idx < 2*_fourth:
+            factor = 3
+        elif idx < 3*_fourth:
+            factor = 2
+        else:
+            factor = 1
 
-        # if victims_list[i][1] == 1:
-        #     fit += 10*factor
-        # elif victims_list[i][1] == 2:
-        #     fit += 6*factor
-        # elif victims_list[i][1] == 3:
-        #     fit += 2*factor
-        # elif victims_list[i][1] == 4:
-        #     fit += factor
+        if victims_list[i][1] == 1:
+            fit += 10*factor
+        elif victims_list[i][1] == 2:
+            fit += 6*factor
+        elif victims_list[i][1] == 3:
+            fit += 2*factor
+        elif victims_list[i][1] == 4:
+            fit += factor
                 
         # TAREFA 03 - FIT ARTAVÉS DA PRIORIDADE DA REDE NEURAL##################################
         
         adjacent_squares = ((0, -1), (0, 1), (-1, 0), (1, 0), (-1, -1), (-1, 1), (1, -1), (1, 1)) #espaços adjacentes para calcular dificuldad ed acesso
-        
         coord = victims_list[i][0] #coordenada da vitima
         coord_map = map.map_data.get(coord) #get nos values do dict do mapa
         x1 = coord_map[0] #dificuldade no local da vitima
@@ -149,14 +153,12 @@ def fitness_function(sequence, victims_list, map):
         x2 = victims_list[i][2] #gravidade da vitima  
         x3 = np.sqrt(pow(coord[0],2)+pow(coord[1],2)) #distancia da vitima ate a base
         x4 = idx+1 #posicao na sequencia
-        new_row = [x1, x2, x3, x4, 0]
-        #df_prioridades.loc[0] = new_row
-        df_prioridades.loc[len(df_prioridades)] = new_row #append row in dataframe
-        #prior_value = classificadores.test_neural_regressor_prior(df_prioridades) #reotrna valor da prioridade
-        #fit += prior_value[0] #soma valor no calculo do fit
+        dict_prioridades[i_d] = {'x1': x1,'x2': x2,'x3': x3,'x4': x4,'p': 0} #insere valores no dict das prioridaddes
+        i_d = i_d + 1
         
-    prior_value = classificadores.test_neural_regressor_prior(df_prioridades) 
-    fit = prior_value['p'].sum()
+    df_prioridades = pd.DataFrame.from_dict(dict_prioridades, 'index') #transofrma o dict em dataframe
+    prior_value = classificadores.test_neural_regressor_prior(df_prioridades)  #retorna dataframe com prioridades
+    fit = fit + prior_value['p'].sum() #soma prioridades ao fit
     
     return fit
 
