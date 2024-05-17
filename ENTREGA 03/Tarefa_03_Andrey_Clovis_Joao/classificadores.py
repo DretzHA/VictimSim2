@@ -380,7 +380,7 @@ def train_neural_regressor_grav():
   X_train, X_test, y_train, y_test = train_test_split(X, Y, test_size=0.2, shuffle=True)
   
   parameters = {
-      'hidden_layer_sizes': [(200,),(100,),(50,)],
+      'hidden_layer_sizes': [(200,), (100,), (50,), (64,32,16)],
       'activation': ['relu', 'logistic', 'identity']
   }
 
@@ -493,12 +493,12 @@ def test_neural_regressor_grav(data):
   
    ############PARA VERIFICAR RMSE COM DADO DE TESTE, DESCOMENTAR. PARA RODAR SISTEMA MULTI AGENTE, DEIXAR COMENTADO###########################
   
-  # test_set_rmse = np.sqrt(mean_squared_error(original_data['grav'], y_pred))
-  # #
-  # # Print R_squared and RMSE value
-  # #
-  # print("Gravidade:")
-  # print('RMSE: ', test_set_rmse)
+  test_set_rmse = np.sqrt(mean_squared_error(original_data['grav'], y_pred))
+  #
+  # Print R_squared and RMSE value
+  #
+  print("Gravidade:")
+  print('RMSE: ', test_set_rmse)
   
   return data
 
@@ -516,24 +516,24 @@ def test_neural_regressor_prior(data):
   
   ############PARA VERIFICAR RMSE COM DADO DE TESTE, DESCOMENTAR. PARA RODAR SISTEMA MULTI AGENTE, DEIXAR COMENTADO###########################
   
-  # original_data = pd.read_csv("datasets\\data_300v_90x90\\rescuer_prior_preblind_target.txt",  header=None) # dataset com resultados para RMSE
-  # original_data.columns = ['x1', 'x2', 'x3', 'x4', 'p'] #atribui as colunas ao DF
-  # test_set_rmse = np.sqrt(mean_squared_error(original_data['p'], y_pred))
-  # #
-  # # Print R_squared and RMSE value
-  # #
-  # print("Prioridade:")
-  # print('RMSE: ', test_set_rmse)
+  original_data = pd.read_csv("datasets\\data_300v_90x90\\rescuer_prior_preblind_target.txt",  header=None) # dataset com resultados para RMSE
+  original_data.columns = ['x1', 'x2', 'x3', 'x4', 'p'] #atribui as colunas ao DF
+  test_set_rmse = np.sqrt(mean_squared_error(original_data['p'], y_pred))
+  #
+  # Print R_squared and RMSE value
+  #
+  print("Prioridade:")
+  print('RMSE: ', test_set_rmse)
 
   return data
 
 
 ########################################################PARA REALIZAR O TESTE, BASTA COLOCAR O CAMINHO DO ARQUIVO####################
-# data_grav = pd.read_csv("datasets\\data_800v\\env_vital_signals.txt",  header=None) # ler dados
-# data_grav.columns = ['ID', 'pSist', 'pDiast', 'qPA', 'pulso', 'resp', 'grav', 'classe'] #atribui as colunas ao DF
+data_grav = pd.read_csv("datasets\\data_800v\\env_vital_signals.txt",  header=None) # ler dados
+data_grav.columns = ['ID', 'pSist', 'pDiast', 'qPA', 'pulso', 'resp', 'grav', 'classe'] #atribui as colunas ao DF
 
-# data_prior = pd.read_csv("datasets\\data_300v_90x90\\rescuer_prior_preblind.txt",  header=None) # ler dados prioridades
-# data_prior.columns = ['x1', 'x2', 'x3', 'x4'] #atribui as colunas ao DF prioridades
+data_prior = pd.read_csv("datasets\\data_300v_90x90\\rescuer_prior_preblind.txt",  header=None) # ler dados prioridades
+data_prior.columns = ['x1', 'x2', 'x3', 'x4'] #atribui as colunas ao DF prioridades
 
 #train_data_cart() #funcao treinamento do modelo de classificação
 #train_neural_regressor_grav() #funcao de treinamento regressão MLP
@@ -549,5 +549,5 @@ def test_neural_regressor_prior(data):
 #print(resultado_csv)
 # resultado_csv.to_csv("pred.txt", header=False, index=False) #salvar arquivo com predição de classes
 
-# test_neural_regressor_grav(data_grav) #testa regressor de gravidades
-# test_neural_regressor_prior(data_prior) #testa regressor das prioridades
+test_neural_regressor_grav(data_grav) #testa regressor de gravidades
+test_neural_regressor_prior(data_prior) #testa regressor das prioridades

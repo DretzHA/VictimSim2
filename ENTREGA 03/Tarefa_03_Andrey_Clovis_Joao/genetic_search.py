@@ -158,6 +158,7 @@ def fitness_function(sequence, victims_list, map):
         
     df_prioridades = pd.DataFrame.from_dict(dict_prioridades, 'index') #transofrma o dict em dataframe
     prior_value = classificadores.test_neural_regressor_prior(df_prioridades)  #retorna dataframe com prioridades
+    
     fit = fit + prior_value['p'].sum() #soma prioridades ao fit
     
     return fit
