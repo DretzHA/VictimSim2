@@ -215,36 +215,6 @@ class Rescuer(AbstAgent):
         print(f'Inertia: {min_inertia}')
         print(f'Silhouette score: {silhouette}')
 
-        # K VARIÁVEL
-        """best_silhouette = 0
-
-        for k in range(3, 8):
-            min_inertia = np.inf
-            best_clustering = []
-            for iteration in range(200):
-                try:
-                    inertia, clustering = self.k_means_clustering(victims_features, k=4)
-                except:
-                    inertia = np.inf
-                if inertia < min_inertia:
-                    min_inertia = inertia
-                    best_clustering = clustering
-
-            labels = [i[0] for i in best_clustering]
-            x = [i[1][0] for i in best_clustering]
-            y = [i[1][1] for i in best_clustering]
-            coordinates = np.array(list(zip(x, y)))
-
-            silhouette_ = silhouette_score(coordinates, labels)
-
-            if silhouette_ > best_silhouette:
-                final_labels = [i[0] for i in best_clustering]
-                final_x = [i[1][0] for i in best_clustering]
-                final_y = [i[1][1] for i in best_clustering]
-                final_inertia = min_inertia
-                final_k = k
-                best_silhouette = silhouette_"""
-
         scatter = px.scatter(x=x, y=y, color=[str(i) for i in labels], color_discrete_sequence=px.colors.qualitative.D3)
         scatter.update_layout(xaxis=dict(zeroline=False, showticklabels=False,
                                          showline=False, title=''),
@@ -258,8 +228,7 @@ class Rescuer(AbstAgent):
 
         return np.array(labels)
 
-            
-    
+
     def sync_explorers(self, explorer_map, victims):
         """ This method should be invoked only to the master agent
 

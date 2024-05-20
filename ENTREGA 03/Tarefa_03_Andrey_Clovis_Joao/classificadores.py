@@ -1,30 +1,31 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-import seaborn as sns
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.neural_network import MLPRegressor
 from sklearn.model_selection import train_test_split
 from sklearn.model_selection import ShuffleSplit
 from sklearn.model_selection import GridSearchCV
 from sklearn import tree
-import skfuzzy as fuzz
-from skfuzzy import control as ctrl
+#import skfuzzy as fuzz
+#from skfuzzy import control as ctrl
 import pickle
-from sklearn.metrics import accuracy_score, confusion_matrix, ConfusionMatrixDisplay, classification_report
+from sklearn.metrics import accuracy_score, confusion_matrix, ConfusionMatrixDisplay, classification_report, mean_squared_error
 import csv
-pd.set_option('future.no_silent_downcasting', True)
-from sklearn.metrics import mean_squared_error
+import warnings
+#pd.set_option('future.no_silent_downcasting', True)
+
+warnings.simplefilter(action='ignore', category=UserWarning)
 
 ##########################################DECISION TREE TREINAMENTO##################################################
 def train_data_cart():
   from sklearn.metrics import accuracy_score, confusion_matrix, ConfusionMatrixDisplay, classification_report
-  
+
   # Load the train dataset
   train_data = pd.read_csv("datasets\\data_4000v\\env_vital_signals.txt", header=None)
   train_data.columns = ['ID', 'pSist', 'pDiast', 'qPA', 'pulso', 'resp', 'grav', 'classe']
   features = ['qPA', 'pulso', 'resp'] #features do treinamento
-  
+
   X = train_data[features]
   Y = train_data['classe']
   X_train, X_test, y_train, y_test = train_test_split(X, Y, test_size=0.2, shuffle=True)
@@ -41,7 +42,7 @@ def train_data_cart():
   # scoring = 'f' the metric for chosing the best model
   clf = GridSearchCV(tree_classifier, parameters, cv=5, verbose=4, return_train_score=True)
   clf.fit(X_train, y_train)
-  
+
   results_clf = clf.cv_results_
   print(results_clf)
   with open('resultados_classificador.csv','w') as f:
@@ -71,18 +72,18 @@ def train_data_cart():
   # fig = plt.figure(figsize=(8, 6))
   # tree.plot_tree(tree_classifier)
   # plt.show()
-  
-  
-  
+
+
+
   #SAVE MODEL
-  
+
   with open('model.pkl','wb') as f:
     pickle.dump(best,f)
 
 ######################################REALIZA  A CLASSIFICAÇÃO COM BASE NAS VITIMAS RECEBIDIAS##############################
 def classification_cart(validation_data):
   from sklearn.metrics import accuracy_score, confusion_matrix, ConfusionMatrixDisplay, classification_report
-  
+
   with open('model.pkl', 'rb') as f:
     clf = pickle.load(f)
 
@@ -94,14 +95,14 @@ def classification_cart(validation_data):
   #Y_validation = validation_data['classe']
   y_pred = clf.predict(X_validation)
   validation_data['classe'] = y_pred
-  
+
   return validation_data
-  
+
   # accuracy_score = accuracy_score(Y_validation, y_pred)
   # print("Accuracy:", accuracy_score)
   # print(classification_report(Y_validation, y_pred))
-  
-  
+
+
 ##########################################FUZY##################################################
 def fuzzy(validation_data):
   # variáveis linguisticas de entrada e saída
@@ -156,13 +157,13 @@ def fuzzy(validation_data):
   regras.append(ctrl.Rule(qPA['ALT'] & pulso['BAI'] & resp['BAI'], classe['CRIT']))  #3
 
   regras.append(ctrl.Rule(qPA['BAI'] & pulso['MED'] & resp['BAI'], classe['INST'])) #4
-  regras.append(ctrl.Rule(qPA['MED'] & pulso['MED'] & resp['BAI'], classe['P_EST']))  #5 
+  regras.append(ctrl.Rule(qPA['MED'] & pulso['MED'] & resp['BAI'], classe['P_EST']))  #5
   regras.append(ctrl.Rule(qPA['ALT'] & pulso['MED'] & resp['BAI'], classe['INST'])) #6
 
   regras.append(ctrl.Rule(qPA['BAI'] & pulso['ALT'] & resp['BAI'], classe['CRIT']))#7
   regras.append(ctrl.Rule(qPA['MED'] & pulso['ALT'] & resp['BAI'], classe['INST'])) #8
   regras.append(ctrl.Rule(qPA['ALT'] & pulso['ALT'] & resp['BAI'], classe['CRIT'])) #9
-  
+
   regras.append(ctrl.Rule(qPA['BAI'] & pulso['BAI'] & resp['MED'], classe['INST'])) #10
   regras.append(ctrl.Rule(qPA['MED'] & pulso['BAI'] & resp['MED'], classe['INST'])) #11
   regras.append(ctrl.Rule(qPA['ALT'] & pulso['BAI'] & resp['MED'], classe['INST'])) #12
@@ -204,7 +205,7 @@ def fuzzy(validation_data):
                 [2,0,1,1,1], #12
                 [0,1,1,2,1], #13
                 [1,1,1,3,1], #14
-                [2,1,1,2,1], #15 
+                [2,1,1,2,1], #15
                 [0,2,1,2,1], #16
                 [1,2,1,1,1], #17
                 [2,2,2,1,1], #18
@@ -289,8 +290,8 @@ def fuzzy(validation_data):
     # print(f"\n*** Agregação dos consequentes das regras ***")
     # for i, termo in enumerate(classe.terms):
     #   print(f"{termo} = {nivel_agregado[i]:.3f}")
-      
-      
+
+
     # print(f"\nValor de qPA = {qPA_input}, pulso = {pulso_input} e respiração = {resp_input}")
 
     # Obter o valor desfuzzificado
@@ -308,19 +309,18 @@ def fuzzy(validation_data):
       res_classe.append(3)
     else:
       res_classe.append(4)
-      
+
   validation_data['classe'] = res_classe
   return validation_data
-    
+
     # plota os termos linguisticos (conjuntos fuzzy) de saída
     # classe.view(sim=sif)
 
 
-
 def dict2df(victims_dict):
   i = 0
-  for victims_per_agent in victims_dict: 
-    df_victims = pd.DataFrame(columns=['ID', 'posX', 'posY', 'qPA', 'pulso', 'resp']) #cria dataframe 
+  for victims_per_agent in victims_dict:
+    df_victims = pd.DataFrame(columns=['ID', 'posX', 'posY', 'qPA', 'pulso', 'resp', 'classe', 'grav']) #cria dataframe
     for key, value in victims_per_agent.items():
         '''passa valores do dict das vitimas para o dataframe'''
         id_victim = key
@@ -329,15 +329,15 @@ def dict2df(victims_dict):
         qPA_victim = value[1][3]
         pulso_victim = value[1][4]
         resp_victim = value[1][5]
-        new_row = [id_victim, posx_victim, posy_victim, qPA_victim, pulso_victim, resp_victim] #new row to append in dataframe
+        new_row = [id_victim, posx_victim, posy_victim, qPA_victim, pulso_victim, resp_victim, 0, 0] #new row to append in dataframe
         df_victims.loc[len(df_victims)] = new_row #append row in datafram
         df_victims['ID']=df_victims['ID'].astype(int)
         df_victims['posX']=df_victims['posX'].astype(int)
         df_victims['posY']=df_victims['posY'].astype(int)
-        
+
     df_victims = classification_cart(df_victims) #manda dataframe para funcao que vai realizar a classificao por arvore de ddecisao
     df_victims = test_neural_regressor_grav(df_victims) #manda dataframe para funcao que vai realizara gravidade por regressao MLP
-    
+
     resultado_csv = pd.DataFrame(columns=['ID', 'x', 'y', 'grav', 'classe']) #cria dataframe para gravarr resultados
     resultado_csv['ID'] = df_victims['ID']
     resultado_csv['x'] = df_victims['posX']
@@ -354,7 +354,7 @@ def dict2df(victims_dict):
     else:
       resultado_csv.to_csv("clusters\\cluster4.txt", header=False, index=False) #salva resultados cluster4 (vitimas grupo 4)
     i+=1
-    
+
     j=0
     for key, value in victims_per_agent.items():
       '''coloca o valor de gravidade para dentro do dict das vitimas'''
@@ -363,72 +363,86 @@ def dict2df(victims_dict):
       value[1].append(classe)
       value[1].append(grav)
       j+=1
-    
-    
+
+
   return victims_dict
+
+
 #############################################################################################################################
+
 
 def train_neural_regressor_grav():
   # Load the train dataset
   train_data = pd.read_csv("datasets\\data_4000v\\env_vital_signals.txt", header=None)
   train_data.columns = ['ID', 'pSist', 'pDiast', 'qPA', 'pulso', 'resp', 'grav', 'classe']
-  features = ['qPA', 'pulso', 'resp'] #features do treinamento
-  
+  features = ['qPA', 'pulso', 'resp']  # features do treinamento
+
   X = train_data[features]
   Y = train_data['grav']
-  #split train and test dataset
+  # split train and test dataset
   X_train, X_test, y_train, y_test = train_test_split(X, Y, test_size=0.2, shuffle=True)
-  
+
   parameters = {
-      'hidden_layer_sizes': [(200,), (100,), (50,), (64,32,16)],
-      'activation': ['relu', 'logistic', 'identity']
+    'hidden_layer_sizes': [(200,), (100,), (50,), (64, 32, 16)],
+    'activation': ['relu', 'logistic', 'identity']
   }
 
-   #MLP settings
+  # MLP settings
   nn = MLPRegressor(random_state=42, max_iter=1000)
   # grid search using cross-validation
   # cv = 3 is the number of folds
   # scoring = 'f' the metric for chosing the best model
   nn_grav = GridSearchCV(nn, parameters, cv=5, scoring='neg_root_mean_squared_error')
   nn_grav.fit(X_train, y_train)
-  
+
   results_nn = nn_grav.cv_results_
   print(results_nn)
-  with open('resultados_gravidade_gridsearch.csv','w') as f:
+  with open('resultados_gravidade_gridsearch.csv', 'w') as f:
     w = csv.writer(f)
     w.writerows(results_nn.items())
   # the best tree according to the f1 score
   best = nn_grav.best_estimator_
-  print("\n* Melhor classificador *")
+  print('* Melhor classificador *')
   print(nn_grav.best_estimator_)
-  
-  
-  best.fit(X_train, y_train) #train data with best estimator
-  
+
+  best.fit(X_train, y_train)  # train data with best estimator
+
   # # Make prediction
   pred = best.predict(X_test)
-  # #
   # # Calculate accuracy and error metrics
-  # #
-  # test_set_rsquared = best.score(X_test, y_test)
   test_set_rmse = np.sqrt(mean_squared_error(y_test, pred))
-  # #
   # # Print R_squared and RMSE value
-  # #
   print("Gravidade:")
   print('RMSE: ', test_set_rmse)
-  
-  #SAVE MODEL
-  
-  with open('model_gravidade.pkl','wb') as f:
-    pickle.dump(best,f)
-  
+
+  # SAVE MODEL
+
+  with open('model_gravidade.pkl', 'wb') as f:
+    pickle.dump(best, f)
+
+  # PLOT LEARNING CURVES
+  #best = MLPRegressor(hidden_layer_sizes=(64, 32, 16), max_iter=1000, random_state=42)
+  train_errors, test_errors = [], []
+
+  for m in range(1, len(X_train), 20):
+    best.fit(X_train[:m], y_train[:m])
+    y_train_pred = best.predict(X_train[:m])
+    y_test_pred = best.predict(X_test)
+    train_errors.append(mean_squared_error(y_train[:m], y_train_pred))
+    test_errors.append(mean_squared_error(y_test, y_test_pred))
+
+  plt.plot(np.sqrt(train_errors), 'r', label='train')
+  plt.plot(np.sqrt(test_errors), 'b', label='test')
+  plt.title('Curvas de aprendizagem da Rede Neural de Gravidade')
+  plt.show()
+
+
 def train_neural_regressor_prior():
   # Load the train dataset
   train_data = pd.read_csv("datasets\\data_300v_90x90\\rescuer_prior.txt", header=None)
   train_data.columns = ['x1', 'x2', 'x3', 'x4', 'p']
   features = ['x1', 'x2', 'x3', 'x4'] #features do treinamento
-  
+
   X = train_data[features]
   Y = train_data['p']
   #split train and test dataset
@@ -439,14 +453,13 @@ def train_neural_regressor_prior():
       'activation': ['relu', 'logistic', 'identity']
   }
 
-   #MLP settings
-  nn = MLPRegressor(random_state=42, max_iter=1000)
+  #MLP settings
+  #nn = MLPRegressor(random_state=42, max_iter=1000)
   # grid search using cross-validation
-  # cv = 3 is the number of folds
-  # scoring = 'f' the metric for chosing the best model
+
   nn_prior = GridSearchCV(nn, parameters, cv=5, scoring='neg_root_mean_squared_error')
   nn_prior.fit(X_train, y_train)
-  
+
   results_nn = nn_prior.cv_results_
   print(results_nn)
   with open('resultados_prioridade_gridsearch.csv','w') as f:
@@ -456,76 +469,84 @@ def train_neural_regressor_prior():
   best = nn_prior.best_estimator_
   print("\n* Melhor classificador *")
   print(nn_prior.best_estimator_)
-  
-  
+
   best.fit(X_train, y_train) #train data
-  
+
   # # Make prediction
   pred = best.predict(X_test)
-  # #
   # # Calculate accuracy and error metrics
-  # #
-  #test_set_rsquared = best.score(X_test, y_test)
   test_set_rmse = np.sqrt(mean_squared_error(y_test, pred))
-  # #
   # # Print R_squared and RMSE value
-  # #
   print("Prioridade:")
   #print('R_squared value: ', test_set_rsquared)
   print('RMSE: ', test_set_rmse)
-  
+
   #SAVE MODEL
-  
+
   with open('model_prioridade.pkl','wb') as f:
     pickle.dump(best,f)
-  
-  
+
+    # PLOT LEARNING CURVES
+
+  best = MLPRegressor(activation='logistic', hidden_layer_sizes=(200,), max_iter=1000,
+                 random_state=42)
+
+  train_errors, test_errors = [], []
+
+  for m in range(1, len(X_train), 20):
+    best.fit(X_train[:m], y_train[:m])
+    y_train_pred = best.predict(X_train[:m])
+    y_test_pred = best.predict(X_test)
+    train_errors.append(mean_squared_error(y_train[:m], y_train_pred))
+    test_errors.append(mean_squared_error(y_test, y_test_pred))
+
+  plt.plot(np.sqrt(train_errors), 'r', label='train')
+  plt.plot(np.sqrt(test_errors), 'b', label='test')
+  plt.title('Curvas de aprendizagem da Rede Neural de Prioridade')
+  plt.show()
+
+
 def test_neural_regressor_grav(data):
-  with open('model_gravidade.pkl', 'rb') as f:
-    model = pickle.load(f)
 
   original_data = data.copy(deep=True) #copia original para RMSE
   features = ['qPA', 'pulso', 'resp']
   X_validation = data[features]
-  y_pred = model.predict(X_validation)
+  y_pred = model_grav.predict(X_validation)
   data['grav'] = y_pred
-  
-  
+
+
    ############PARA VERIFICAR RMSE COM DADO DE TESTE, DESCOMENTAR. PARA RODAR SISTEMA MULTI AGENTE, DEIXAR COMENTADO###########################
-  
+
   test_set_rmse = np.sqrt(mean_squared_error(original_data['grav'], y_pred))
-  #
   # Print R_squared and RMSE value
-  #
   print("Gravidade:")
   print('RMSE: ', test_set_rmse)
-  
+
   return data
 
 
 def test_neural_regressor_prior(data):
-  with open('model_prioridade.pkl', 'rb') as f:
-    model = pickle.load(f)
-    
-  features = ['x1', 'x2', 'x3','x4']
+  features = ['x1', 'x2', 'x3', 'x4']
   X_validation = data[features]
-  y_pred = model.predict(X_validation)
+  y_pred = model_prior.predict(X_validation)
   data['p'] = y_pred
-  
-  
-  
+
   ############PARA VERIFICAR RMSE COM DADO DE TESTE, DESCOMENTAR. PARA RODAR SISTEMA MULTI AGENTE, DEIXAR COMENTADO###########################
-  
+
   original_data = pd.read_csv("datasets\\data_300v_90x90\\rescuer_prior_preblind_target.txt",  header=None) # dataset com resultados para RMSE
   original_data.columns = ['x1', 'x2', 'x3', 'x4', 'p'] #atribui as colunas ao DF
   test_set_rmse = np.sqrt(mean_squared_error(original_data['p'], y_pred))
-  #
   # Print R_squared and RMSE value
-  #
   print("Prioridade:")
   print('RMSE: ', test_set_rmse)
 
   return data
+
+
+def priority_calculus(X):
+
+  y_pred = model_prior.predict(X)
+  return np.sqrt(np.sum(np.array(y_pred))/(len(X)*100))
 
 
 ########################################################PARA REALIZAR O TESTE, BASTA COLOCAR O CAMINHO DO ARQUIVO####################
@@ -549,5 +570,15 @@ data_prior.columns = ['x1', 'x2', 'x3', 'x4'] #atribui as colunas ao DF priorida
 #print(resultado_csv)
 # resultado_csv.to_csv("pred.txt", header=False, index=False) #salvar arquivo com predição de classes
 
-test_neural_regressor_grav(data_grav) #testa regressor de gravidades
-test_neural_regressor_prior(data_prior) #testa regressor das prioridades
+f = open('model_prioridade.pkl', 'rb')
+model_prior = pickle.load(f)
+
+f = open('model_gravidade.pkl', 'rb')
+model_grav = pickle.load(f)
+
+f = open('model.pkl', 'rb')
+model_cart = pickle.load(f)
+
+#test_neural_regressor_grav(data_grav) #testa regressor de gravidades
+#test_neural_regressor_prior(data_prior) #testa regressor das prioridades
+

@@ -4,9 +4,10 @@ import numpy as np
 import classificadores
 import pandas as pd
 import warnings
-pd.set_option('future.no_silent_downcasting', True)
+#pd.set_option('future.no_silent_downcasting', True)
 warnings.simplefilter(action='ignore', category=FutureWarning)
 cost_matrix = []
+
 
 def planner_genetic_algorithm(map, victims, tlim):
     """Genetic algorithm for permutation problem. Finds a suboptimal sequence for victim sequence within a cluster
@@ -32,10 +33,8 @@ def planner_genetic_algorithm(map, victims, tlim):
 
     while True:
 
-        if generation > 100:
+        if generation > 200:
             break
-
-        #print(f'Generation {generation}')
 
         fits = []
         costs = []
@@ -48,16 +47,16 @@ def planner_genetic_algorithm(map, victims, tlim):
         for individual in population:
             total_time, sequence = calculate_cost(individual, victims_list)
             costs.append(total_time)
-            fit = fitness_function(sequence, victims_list, map)
+            fit = fitness_function(sequence, victims_list, map, total_time)
             fits.append(fit)
 
-        print(f'Mean fit: {sum(fits)/len(fits)}\nMaximum fit: {max(fits)}')
+        print(f'Mean fit: {sum(fits)/len(fits)}\nMinimum fit: {min(fits)}')
 
         # ranquamento por fit
         zipped_individuals = zip(fits, costs, population)
-        zipped_individuals = sorted(zipped_individuals, key=lambda x: x[0], reverse=True)
+        zipped_individuals = sorted(zipped_individuals, key=lambda x: x[0])
 
-        # eliminação da metade da população com menor fit
+        # eliminação da metade da população com maior fit
         fits, costs, population = zip(*zipped_individuals)
         fits = list(fits[:len(fits)//2])
         costs = list(costs[:len(costs) // 2])
@@ -65,11 +64,11 @@ def planner_genetic_algorithm(map, victims, tlim):
 
         generation += 1
 
-    # Determinação da sequência com fit máximo E custo (tempo) mínimo
-    max_value = max(fits)
-    max_fits = [i for i, val in enumerate(fits) if val == max_value]
-    max_fits_costs = [costs[index] for index in max_fits]
-    min_cost_index = costs.index(min(max_fits_costs))
+    # Determinação da sequência com fit mínimo E custo (tempo) mínimo
+    min_value = min(fits)
+    min_fits = [i for i, val in enumerate(fits) if val == min_value]
+    min_fits_costs = [costs[index] for index in min_fits]
+    min_cost_index = costs.index(min(min_fits_costs))
 
     print(f'Best sequence with fit {fits[min_cost_index]} and cost {costs[min_cost_index]} '
           f'is\n {population[min_cost_index]}')
@@ -96,44 +95,18 @@ def planner_genetic_algorithm(map, victims, tlim):
     return directions
 
 
-def fitness_function(sequence, victims_list, map):
+def fitness_function(sequence, victims_list, map, total_time):
     """Função de fit para uma dada sequência de vítimas
     @:param sequence: sequência de vítimas
     @:param victims_list lista de dados das vítimas"""
-    
-    df_prioridades = pd.DataFrame(columns=['x1', 'x2', 'x3', 'x4', 'p']) #cria dataframe 
-    dict_prioridades = {} # dictoriny que será transformada em dataframe, para agilizar processamento
-    i_d = 0 #contador para add entradas no dict
-    
-    
-    fit = 0
 
-    _fourth = len(sequence)//4
+    list_prioridades = []
+
+    #   _fourth = len(sequence)//4
+
+    priority_index = 0
     
     for idx, i in enumerate(sequence):
-        
-        # TAREFA 02
-        
-        # Vítimas mais críticas aumentam mais o fit de uma sequência.
-        # Quanto mais ao início da sequência estiver uma vítima, maior o aumento de fit
-
-        if idx < _fourth:
-            factor = 4
-        elif idx < 2*_fourth:
-            factor = 3
-        elif idx < 3*_fourth:
-            factor = 2
-        else:
-            factor = 1
-
-        if victims_list[i][1] == 1:
-            fit += 10*factor
-        elif victims_list[i][1] == 2:
-            fit += 6*factor
-        elif victims_list[i][1] == 3:
-            fit += 2*factor
-        elif victims_list[i][1] == 4:
-            fit += factor
                 
         # TAREFA 03 - FIT ARTAVÉS DA PRIORIDADE DA REDE NEURAL##################################
         
@@ -150,16 +123,17 @@ def fitness_function(sequence, victims_list, map):
             else: # se não existe no mapa, atribui valor 100
                 x1 += 100
 
-        x2 = victims_list[i][2] #gravidade da vitima  
-        x3 = np.sqrt(pow(coord[0],2)+pow(coord[1],2)) #distancia da vitima ate a base
-        x4 = idx+1 #posicao na sequencia
-        dict_prioridades[i_d] = {'x1': x1,'x2': x2,'x3': x3,'x4': x4,'p': 0} #insere valores no dict das prioridaddes
-        i_d = i_d + 1
-        
-    df_prioridades = pd.DataFrame.from_dict(dict_prioridades, 'index') #transofrma o dict em dataframe
-    prior_value = classificadores.test_neural_regressor_prior(df_prioridades)  #retorna dataframe com prioridades
-    
-    fit = fit + prior_value['p'].sum() #soma prioridades ao fit
+        x2 = victims_list[i][2]  # gravidade da vitima
+        x3 = np.sqrt(pow(coord[0], 2)+pow(coord[1], 2))  # distancia da vitima ate a base
+        x4 = idx+1  # posicao na sequencia
+        list_prioridades.append([x1, x2, x3, x4])
+
+        priority_index += (idx + 1) * victims_list[i][2] / (100 * len(sequence))
+
+    priority_nn = classificadores.priority_calculus(list_prioridades)  # retorna soma das prioridades
+
+    #fit = total_time*priority_index
+    fit = total_time/(priority_index*priority_nn)
     
     return fit
 
