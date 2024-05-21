@@ -532,9 +532,11 @@ def test_neural_regressor_prior(data):
   y_pred = model_prior.predict(X_validation)
   data['p'] = y_pred
 
+  
   ############PARA VERIFICAR RMSE COM DADO DE TESTE, DESCOMENTAR. PARA RODAR SISTEMA MULTI AGENTE, DEIXAR COMENTADO###########################
-
-  # original_data = pd.read_csv("datasets\\data_300v_90x90\\rescuer_prior_preblind_target.txt",  header=None) # dataset com resultados para RMSE
+  
+  # data.to_csv("pred_prior.txt", header=False, index=False) #salvar arquivo com predição de classes
+  # original_data = pd.read_csv("datasets\\data_400v_90x90\\rescue_prior_target.txt",  header=None) # dataset com resultados para RMSE
   # original_data.columns = ['x1', 'x2', 'x3', 'x4', 'p'] #atribui as colunas ao DF
   # test_set_rmse = np.sqrt(mean_squared_error(original_data['p'], y_pred))
   # # Print R_squared and RMSE value
@@ -554,8 +556,8 @@ def priority_calculus(X):
 # data_grav = pd.read_csv("datasets\\data_800v\\env_vital_signals.txt",  header=None) # ler dados
 # data_grav.columns = ['ID', 'pSist', 'pDiast', 'qPA', 'pulso', 'resp', 'grav', 'classe'] #atribui as colunas ao DF
 
-# data_prior = pd.read_csv("datasets\\data_300v_90x90\\rescuer_prior_preblind.txt",  header=None) # ler dados prioridades
-# data_prior.columns = ['x1', 'x2', 'x3', 'x4'] #atribui as colunas ao DF prioridades
+data_prior = pd.read_csv("datasets\\data_400v_90x90\\rescue_prior_blind.txt",  header=None) # ler dados prioridades
+data_prior.columns = ['x1', 'x2', 'x3', 'x4'] #atribui as colunas ao DF prioridades
 
 #train_data_cart() #funcao treinamento do modelo de classificação
 #train_neural_regressor_grav() #funcao de treinamento regressão MLP
@@ -581,5 +583,5 @@ f = open('model.pkl', 'rb')
 model_cart = pickle.load(f)
 
 # test_neural_regressor_grav(data_grav) #testa regressor de gravidades
-# test_neural_regressor_prior(data_prior) #testa regressor das prioridades
+test_neural_regressor_prior(data_prior) #testa regressor das prioridades
 
